@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Solo Operator v6 — LLL Services</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&family=Barlow:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:#050508;font-family:'Barlow',sans-serif;color:#e5e5e5;overflow-x:hidden;}
+.mono{font-family:'Share Tech Mono',monospace;}
+.heading{font-family:'Rajdhani',sans-serif;}
+input,select,textarea{background:#0a0a14;border:1px solid #1a1a2e;color:#e5e5e5;padding:9px 13px;font-family:'Barlow',sans-serif;font-size:14px;border-radius:2px;width:100%;box-sizing:border-box;outline:none;}
+input:focus,select:focus,textarea:focus{border-color:#6366f1;}
+select option{background:#0a0a14;}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-track{background:#050508;}
+::-webkit-scrollbar-thumb{background:#1a1a2e;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes glow{0%,100%{box-shadow:0 0 8px rgba(99,102,241,0.4)}50%{box-shadow:0 0 24px rgba(99,102,241,0.9)}}
+@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes flashIn{0%{opacity:0;transform:translateY(-16px) translateX(-50%)}15%{opacity:1;transform:translateY(0) translateX(-50%)}80%{opacity:1}100%{opacity:0;transform:translateY(-10px) translateX(-50%)}}
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+@keyframes sssGlow{0%,100%{box-shadow:0 0 12px rgba(255,255,255,0.1),0 0 24px rgba(255,255,255,0.05)}50%{box-shadow:0 0 30px rgba(255,255,255,0.3),0 0 60px rgba(255,255,255,0.15)}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useCallback,useRef} = React;
+
+// ─── RANK SYSTEM ─────────────────────────────────────────────────────────────
+// F   = Jobless, homeless — starting at rock bottom
+// E   = Unemployed with free time — potential, no momentum
+// D   = Working — trading time for money, basic stability
+// C   = Business moves — can support family and employees
+// B   = Financially set for life — freedom unlocked
+// A   = Affecting communities — your work has reach
+// S   = Affecting cities — you are a force
+// SS  = Affecting nations — legacy territory
+// SSS = Unreachable by design — the myth, the ceiling that doesn't exist
+const RANK_THRESHOLDS=[0,300,800,1800,3500,6000,10000,16000,25000,999999999];
+const RANKS=["F","E","D","C","B","A","S","SS","SSS"];
+const RANK_COLORS={
+  F:"#444",
+  E:"#888",
+  D:"#4ade80",
+  C:"#38bdf8",
+  B:"#a78bfa",
+  A:"#f97316",
+  S:"#facc15",
+  SS:"#fb7185",
+  SSS:"#ffffff"
+};
+const RANK_TITLES={
+  F:"JOBLESS · HOMELESS",
+  E:"UNEMPLOYED · FREE TIME",
+  D:"WORKING · BUILDING",
+  C:"BUSINESS MOVES · PROVIDER",
+  B:"FINANCIALLY FREE · SET FOR LIFE",
+  A:"COMMUNITY IMPACT · BUILDER",
+  S:"CITY-LEVEL FORCE · OPERATOR",
+  SS:"NATIONAL REACH · LEGACY",
+  SSS:"∞ · BEYOND REACH"
+};
+
+const QUEST_TYPES=["FIELD","NEGOTIATION","OPERATIONS","COLLECTIONS","INFRASTRUCTURE","SYSTEMS","EQUIPMENT","MAINTENANCE","VISION","PERSONAL"];
+const TYPE_COLORS={FIELD:"#4ade80",NEGOTIATION:"#facc15",OPERATIONS:"#38bdf8",COLLECTIONS:"#c084fc",INFRASTRUCTURE:"#2dd4bf",SYSTEMS:"#fb7185",EQUIPMENT:"#f97316",MAINTENANCE:"#888",VISION:"#fff",PERSONAL:"#f9a8d4"};
+const WEAPON_CATEGORIES=["TOOL","VEHICLE","SOFTWARE","GEAR","KNOWLEDGE","CONSUMABLE"];
+const STORAGE_KEY="solo-operator-v5";
+const VIEW_KEY="solo-operator-view";
+const DAILY_KEY="solo-operator-dailies";
+const RANK_KEY="solo-operator-ranks";
+const SETTINGS_KEY="solo-operator-settings";
+const DEFAULT_SETTINGS={fontSize:14,accentColor:"#6366f1",highlightColor:"#facc15",mobile:true};
+const PREV_KEYS=["solo-operator-v4","solo-operator-v3","solo-operator-v2"];
+const PIN_KEY="solo-operator-pin";
+
+function simpleHash(str){let h=0;for(let i=0;i<str.length;i++){h=((h<<5)-h)+str.charCodeAt(i);h|=0;}return String(h);}
+
+function PinScreen({onUnlock,hasPin,onSetPin}){
+  const [input,setInput]=useState("");
+  const [newPin,setNewPin]=useState("");
+  const [confirm,setConfirm]=useState("");
+  const [error,setError]=useState("");
+  const [shake,setShake]=useState(false);
+
+  function doShake(){setShake(true);setTimeout(()=>setShake(false),600);}
+
+  function handleKey(d){
+    if(d==="⌫"){
+      if(!hasPin){if(newPin.length<4)setNewPin(p=>p.slice(0,-1));else setConfirm(p=>p.slice(0,-1));}
+      else setInput(p=>p.slice(0,-1));
+      setError("");return;
+    }
+    if(!hasPin){
+      if(newPin.length<4){setNewPin(p=>p+d);}
+      else if(confirm.length<4){
+        const nc=confirm+d;
+        setConfirm(nc);
+        if(nc.length===4){
+          if(newPin===nc){onSetPin(simpleHash(newPin));onUnlock();}
+          else{setError("PINs do not match");doShake();setTimeout(()=>{setConfirm("");setError("");},800);}
+        }
+      }
+      return;
+    }
+    const next=input+d;
+    setInput(next);
+    if(next.length===4){
+      if(simpleHash(next)===localStorage.getItem(PIN_KEY)){onUnlock();}
+      else{setError("WRONG PIN");doShake();setTimeout(()=>{setInput("");setError("");},800);}
+    }
+  }
+
+  const activeVal=!hasPin?(newPin.length<4?newPin:confirm):input;
+  const phase=!hasPin?(newPin.length<4?"SET YOUR PIN":"CONFIRM PIN"):"ENTER PIN";
+  const pad=[["1","2","3"],["4","5","6"],["7","8","9"],["","0","⌫"]];
+  const dots=(val)=>Array.from({length:4},(_,i)=>(
+    <div key={i} style={{width:13,height:13,borderRadius:"50%",background:i<val.length?"#6366f1":"#1a1a2e",border:"1px solid #2a2a3e",transition:"background 0.15s"}}/>
+  ));
+
+  return(
+    <div style={{minHeight:"100vh",background:"#050508",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+      <div style={{marginBottom:32,textAlign:"center"}}>
+        <div style={{fontSize:10,letterSpacing:6,color:"#6366f133",marginBottom:6,fontFamily:"'Share Tech Mono',monospace"}}>SOLO OPERATOR</div>
+        <div style={{fontSize:30,fontWeight:700,color:"#fff",fontFamily:"'Rajdhani',sans-serif",letterSpacing:3}}>LAYNE LEATHERWOOD</div>
+        <div style={{width:40,height:2,background:"linear-gradient(90deg,#6366f1,#a78bfa)",margin:"12px auto 0"}}/>
+      </div>
+      <div style={{background:"#0a0a14",border:"1px solid #1a1a2e",padding:"32px 28px",width:"100%",maxWidth:320,display:"flex",flexDirection:"column",alignItems:"center",gap:20,transform:shake?"translateX(-6px)":"none",transition:"transform 0.1s"}}>
+        <div style={{fontSize:10,letterSpacing:4,color:"#6366f166",fontFamily:"'Share Tech Mono',monospace"}}>{phase}</div>
+        <div style={{display:"flex",gap:14}}>{dots(activeVal)}</div>
+        {error&&<div style={{fontSize:11,color:"#fb7185",letterSpacing:3,fontFamily:"'Share Tech Mono',monospace"}}>{error}</div>}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,width:"100%"}}>
+          {pad.map((row,ri)=>row.map((d,ci)=>(
+            <button key={`${ri}-${ci}`} onClick={()=>d&&handleKey(d)} style={{background:d?"#0d0d1a":"transparent",border:d?"1px solid #1a1a2e":"none",color:d==="⌫"?"#fb7185":"#e5e5e5",fontSize:d==="⌫"?18:22,fontWeight:600,padding:"16px 0",cursor:d?"pointer":"default",fontFamily:"'Rajdhani',sans-serif",borderRadius:2}}>{d}</button>
+          )))}
+        </div>
+      </div>
+      <div style={{marginTop:20,fontSize:10,color:"#222",letterSpacing:2,fontFamily:"'Share Tech Mono',monospace"}}>SECURED · LLL SERVICES</div>
+    </div>
+  );
+}
+
+// ─── RECURRING MISSION TEMPLATES ─────────────────────────────────────────────
+const DEFAULT_RECURRING=[
+  {
+    id:"r1",
+    icon:"🌿",
+    title:"Weekly Field Operations",
+    description:"Complete all scheduled lawn and landscape jobs for the week. Show up. Execute. Collect.",
+    frequency:"weekly",
+    xpPerCompletion:120,
+    bountyPerCompletion:500,
+    totalCompletions:0,
+    milestones:[
+      {completions:4, label:"1 Month Consistent", reward:"Route discipline XP | Client trust +1", xpBonus:200},
+      {completions:12, label:"3 Months Strong", reward:"Recurring revenue badge | Referral credibility unlocked", xpBonus:500},
+      {completions:26, label:"Half Year Operator", reward:"Season mastery XP | Rate increase justified", xpBonus:1000},
+      {completions:52, label:"Full Year Veteran", reward:"Elite operator status | $125K foundation built", xpBonus:2500},
+    ]
+  },
+  {
+    id:"r2",
+    icon:"📞",
+    title:"Weekly Quote Blitz",
+    description:"Send at least 2 new quotes or follow up on 2 open quotes every week. The pipeline never sleeps.",
+    frequency:"weekly",
+    xpPerCompletion:80,
+    bountyPerCompletion:0,
+    totalCompletions:0,
+    milestones:[
+      {completions:4, label:"4 Weeks Quoting", reward:"Sales velocity XP | Pipeline discipline badge", xpBonus:150},
+      {completions:12, label:"12-Week Streak", reward:"Closer mentality unlocked | Objection handling XP", xpBonus:400},
+      {completions:26, label:"Half-Year Hustle", reward:"Quote machine badge | Revenue predictability unlocked", xpBonus:800},
+      {completions:52, label:"52-Week Operator", reward:"Master closer XP | Business development legend", xpBonus:2000},
+    ]
+  },
+  {
+    id:"r3",
+    icon:"💰",
+    title:"Monthly Revenue Review",
+    description:"Log your monthly gross revenue, update your mission trackers, and set your focus for next month.",
+    frequency:"monthly",
+    xpPerCompletion:200,
+    bountyPerCompletion:0,
+    totalCompletions:0,
+    milestones:[
+      {completions:3, label:"Q1 Complete", reward:"Financial clarity XP | Trend analysis unlocked", xpBonus:300},
+      {completions:6, label:"Half Year Review", reward:"Forecasting badge | Investor mindset XP", xpBonus:600},
+      {completions:12, label:"Full Year Tracked", reward:"CFO-level awareness | Revenue mastery badge", xpBonus:1500},
+    ]
+  },
+  {
+    id:"r4",
+    icon:"🤝",
+    title:"Weekly Referral Ask",
+    description:"Deliver the referral ask to at least 1 completed client. Never signal vacancy — position as selective.",
+    frequency:"weekly",
+    xpPerCompletion:60,
+    bountyPerCompletion:0,
+    totalCompletions:0,
+    milestones:[
+      {completions:4, label:"First Month Asking", reward:"Referral confidence XP | Fear of asking removed", xpBonus:100},
+      {completions:12, label:"Referral Machine", reward:"Network growth badge | Word-of-mouth engine active", xpBonus:350},
+      {completions:26, label:"Half-Year Network", reward:"Community reputation XP | Brand ambassador unlocked", xpBonus:700},
+      {completions:52, label:"Year-Long Network Builder", reward:"Referral empire badge | Organic growth engine built", xpBonus:1800},
+    ]
+  },
+  {
+    id:"r5",
+    icon:"📚",
+    title:"Weekly Skill Sharpening",
+    description:"Learn one new sales tactic, business principle, or trade skill. Read, watch, practice, apply.",
+    frequency:"weekly",
+    xpPerCompletion:50,
+    bountyPerCompletion:0,
+    totalCompletions:0,
+    milestones:[
+      {completions:4, label:"4 Weeks Learning", reward:"Growth mindset badge | Curiosity habit formed", xpBonus:100},
+      {completions:12, label:"12-Week Scholar", reward:"Applied knowledge XP | Skills compound daily", xpBonus:300},
+      {completions:26, label:"Half-Year Student", reward:"Expertise building XP | Teaching others unlocked", xpBonus:600},
+      {completions:52, label:"Year of Learning", reward:"Master student badge | Industry authority XP", xpBonus:1500},
+    ]
+  },
+];
+
+const DEFAULT_QUESTS=[
+  {id:"q1",rank:"D",type:"FIELD",bounty:150,xp:120,title:"Morning Strike — Linda's Domain",objective:"Complete mowing and apply full treatment at Linda's property before 4 PM.",reward:"Client loyalty +1 | Revenue secured",lore:"The operator who shows up first controls the territory.",completed:false},
+  {id:"q2",rank:"D",type:"FIELD",bounty:80,xp:80,title:"Sharon's Sweep",objective:"Complete full mowing service at Sharon's property before 4 PM.",reward:"Route efficiency XP | Recurring revenue secured",lore:"Two stops. Same day. Same route. This is how empires are built.",completed:false},
+  {id:"q3",rank:"C",type:"FIELD",bounty:525,xp:150,title:"Miss Allen — Back Yard Finish",objective:"Complete back yard mulch and tree rings at 1381 Crescent Cove Dr. Invoice target ~$525.",reward:"Job completion XP | Invoice submitted",lore:"Jobs in motion generate cash. Jobs waiting generate nothing.",completed:false},
+  {id:"q4",rank:"C",type:"FIELD",bounty:120,xp:100,title:"Travis — Flowerbed Reclamation",objective:"Full flower bed cleanup at Travis's property.",reward:"Referral network XP | Cannon Hill pipeline boost",lore:"Travis referred Cannon Hill. Every job here is a $3,270 conversation.",completed:false},
+  {id:"q5",rank:"B",type:"NEGOTIATION",bounty:3270,xp:500,title:"The Cannon Hill Closing",objective:"Call Cannon. Present QT-000009. Close at $3,270 gross / $3,120 net. $600 upfront + $420/month x6.",reward:"$3,270 revenue | Bundle close mastery XP | B-rank pressure tested",lore:"This is the boss fight. You have the quote. You have the referral. You have the plan. Now you need the close.",completed:false},
+  {id:"q6",rank:"C",type:"NEGOTIATION",bounty:1150,xp:200,title:"Amy's Tree Contract",objective:"Confirm nursery price. Send Live Oak quote at $1,150 with install. Follow up by call.",reward:"$1,150 revenue | Arborist sales XP",lore:"A quote that sits in your head is worth $0.",completed:false},
+  {id:"q7",rank:"B",type:"OPERATIONS",bounty:800,xp:350,title:"David Lavon — Scope Expansion",objective:"Finalize expanded seasonal care plan: faucet repair, topsoil topdressing, flowerbed installation, gutter drainage reinstallation, hole filling, river rock. Price and send.",reward:"High-ticket scope mastery | Upsell XP | Existing client revenue multiplied",lore:"Selling more to an existing client costs 5x less effort than finding a new one.",completed:false},
+  {id:"q8",rank:"D",type:"OPERATIONS",bounty:200,xp:150,title:"Evelyn, Mike & Mike Walls — Quote Blitz",objective:"Build and send quotes for Evelyn, Mike, and Mike Walls today.",reward:"Pipeline velocity XP | 3 active leads opened",lore:"Speed is a competitive advantage. The operator who quotes fastest wins.",completed:false},
+  {id:"q9",rank:"D",type:"COLLECTIONS",bounty:0,xp:100,title:"Carrie Ware — Collect What You're Owed",objective:"Send the drafted payment collection text to Carrie Ware. Follow up until resolved.",reward:"Cash flow XP | Collections confidence +1",lore:"An operator who can't collect can't survive. You earned this money. Go get it.",completed:false},
+  {id:"q10",rank:"C",type:"NEGOTIATION",bounty:0,xp:180,title:"Insurance Prospect — 4 Vehicles",objective:"Follow up with 4-vehicle prospect ($1,240/month, est. overpaying $250-400). Use forced-choice close. Get the appointment.",reward:"Insurance revenue XP | Multi-income stream active",lore:"Your prospect is paying someone else $1,240 a month for coverage you can beat.",completed:false},
+  {id:"q11",rank:"A",type:"INFRASTRUCTURE",bounty:0,xp:500,title:"Digital Fortress — Domain & Workspace",objective:"Buy layneslawn.com. Set up layne@layneslawn.com via Google Workspace. Professional identity live.",reward:"Professional identity unlocked | Lead capture online | Trust signal to all prospects",lore:"A business without a domain is a contractor without a truck.",completed:false},
+  {id:"q12",rank:"A",type:"SYSTEMS",bounty:0,xp:500,title:"Tech Spec List — Alex's Playbook",objective:"Document every platform in your tech stack with access and operating instructions for delegation.",reward:"Team scalability XP | Delegation unlocked | Business continuity protected",lore:"A team without documentation depends on you for everything.",completed:false},
+  {id:"q13",rank:"S",type:"SYSTEMS",bounty:0,xp:850,title:"Jarvis Manual — Clone Yourself",objective:"Build the full Jarvis AI manual for Alex covering every business function: quoting, client comms, collections, scheduling.",reward:"Operational leverage unlocked | Business continuity secured | S-rank systems builder",lore:"The manual you write today never takes a day off.",completed:false},
+  {id:"q14",rank:"C",type:"EQUIPMENT",bounty:0,xp:200,title:"Arsenal Restock — Amazon Buy List",objective:"Place full Amazon order: EGO PSA1000, Bulliant belt, tune-up kit, hitch, lights, bed liner.",reward:"Equipment readiness +1 | Truck upgrade XP",lore:"A sharp operator keeps his tools sharp.",completed:false},
+  {id:"q15",rank:"D",type:"MAINTENANCE",bounty:0,xp:100,title:"Ethan — Truck Diagnostics",objective:"Talk to Ethan. Schedule AC flush ($300) and oil change ($120). Truck is your business.",reward:"Vehicle reliability XP | Downtime risk reduced",lore:"A breakdown in Texas summer doesn't cost you repair money. It costs you jobs.",completed:false},
+  {id:"q16",rank:"B",type:"VISION",bounty:0,xp:400,title:"$80K Liquid — Savings Protocol",objective:"Define and document your monthly savings system. Set automatic transfers. Protect the runway.",reward:"Financial discipline XP | Venue fund activated",lore:"The wedding venue isn't a dream. It's a savings plan with a deadline.",completed:false},
+  {id:"q17",rank:"A",type:"VISION",bounty:0,xp:600,title:"Venue Research — Dallas 2027",objective:"Research 3 wedding venues or flower farms for sale within 60 miles of Dallas. Document pricing, financing, and timelines.",reward:"Vision clarity XP | Acquisition pipeline opened",lore:"Every empire started with someone deciding they were serious.",completed:false},
+  {id:"q18",rank:"C",type:"PERSONAL",bounty:0,xp:150,title:"Anne's Birthday Dinner — Lock It In",objective:"Coordinate with Trisha. Confirm venue, guest list of 24, and dinner details for Anne's birthday and gender reveal.",reward:"Relationship capital XP | Family leader badge",lore:"The operator who handles business handles family. Both matter.",completed:false},
+];
+
+const DEFAULT_ARSENAL=[
+  {id:"w1",name:"EGO PSA1000 Pole Saw",category:"TOOL",description:"+15% tree job efficiency. Multi-head chainsaw attachment for clean cuts at height.",cost:220,owned:false,icon:"⚔️",stats:{power:75,efficiency:80,durability:90}},
+  {id:"w2",name:"Reese Class III Hitch",category:"VEHICLE",description:"6,500lb GTW. Locks your trailer to the F150. Non-negotiable.",cost:175,owned:false,icon:"🔗",stats:{power:60,efficiency:85,durability:95}},
+  {id:"w3",name:"U-POL Raptor Bed Liner",category:"VEHICLE",description:"Protects your arsenal carrier. UV and scratch resistant. Built for operators.",cost:160,owned:false,icon:"🛡️",stats:{power:20,efficiency:50,durability:100}},
+  {id:"w4",name:"Bulliant Tactical Belt",category:"GEAR",description:"300kg rated. Quick-release clasp. Built for operators in the field.",cost:22,owned:false,icon:"🪖",stats:{power:30,efficiency:60,durability:85}},
+  {id:"w5",name:"Toro Timemaster Tune-Up",category:"CONSUMABLE",description:"Spark plug RC12YC + air filter + oil. Restore your primary weapon.",cost:20,owned:false,icon:"🔧",stats:{power:80,efficiency:90,durability:100}},
+  {id:"w6",name:"F150 Lights Package",category:"VEHICLE",description:"LED tail + cab lights. DOT compliant. No more driving blind.",cost:100,owned:false,icon:"💡",stats:{power:10,efficiency:40,durability:90}},
+  {id:"w7",name:"Zoho Invoice Pro",category:"SOFTWARE",description:"Quote machine. Automated invoicing. Client portal. Already deployed.",cost:25,owned:true,icon:"📊",stats:{power:60,efficiency:95,durability:100}},
+  {id:"w8",name:"Google Workspace",category:"SOFTWARE",description:"layne@layneslawn.com. The trust signal every high-value client notices.",cost:6,owned:false,icon:"📧",stats:{power:40,efficiency:80,durability:100}},
+  {id:"w9",name:"AC Flush Service",category:"VEHICLE",description:"Restore climate control. Non-negotiable in Texas summer.",cost:300,owned:false,icon:"❄️",stats:{power:10,efficiency:70,durability:95}},
+  {id:"w10",name:"Venmo Credit Card",category:"KNOWLEDGE",description:"Primary card for all purchases. $6k/80-day spending goal by May 19. Rewards every dollar.",cost:0,owned:true,icon:"💳",stats:{power:50,efficiency:85,durability:100}},
+];
+
+const DEFAULT_MISSIONS=[
+  {id:"m1",title:"$125K Gross Revenue",description:"Hit $125,000 gross revenue by November 2026.",target:125000,current:0,unit:"$",icon:"💰",milestones:[{label:"$25K",value:25000},{label:"$50K",value:50000},{label:"$75K",value:75000},{label:"$125K",value:125000}]},
+  {id:"m2",title:"$80K Liquid by EOY",description:"Build $80,000 liquid capital by end of 2026 to fund the venue acquisition.",target:80000,current:0,unit:"$",icon:"🏦",milestones:[{label:"$20K",value:20000},{label:"$40K",value:40000},{label:"$60K",value:60000},{label:"$80K",value:80000}]},
+  {id:"m3",title:"22 Recurring Clients",description:"Maintain and grow to 22+ locked recurring clients.",target:22,current:22,unit:"clients",icon:"👥",milestones:[{label:"10",value:10},{label:"15",value:15},{label:"20",value:20},{label:"22",value:22}]},
+  {id:"m4",title:"Wedding Venue by 2027",description:"Acquire a wedding venue or flower farm near Dallas. The long game.",target:100,current:0,unit:"%",icon:"🌸",milestones:[{label:"Research",value:25},{label:"Financing",value:50},{label:"Offer",value:75},{label:"Acquired",value:100}]},
+];
+
+function getRank(xp,t){t=t||RANK_THRESHOLDS;for(let i=t.length-1;i>=0;i--)if(xp>=t[i])return RANKS[i];return"F";}
+function getNextXP(xp,t){t=t||RANK_THRESHOLDS;for(let i=0;i<t.length;i++)if(xp<t[i])return t[i];return t[t.length-2];}
+
+function App(){
+  const [tab,setTab]=useState("home");
+  const [unlocked,setUnlocked]=useState(false);
+  const [desktop,setDesktop]=useState(()=>localStorage.getItem(VIEW_KEY)==="desktop");
+  const [rankThresholds,setRankThresholds]=useState(()=>{try{const s=localStorage.getItem(RANK_KEY);return s?JSON.parse(s):RANK_THRESHOLDS.slice();}catch(e){return RANK_THRESHOLDS.slice();}});
+  const [settings,setSettings]=useState(()=>{try{const s=localStorage.getItem(SETTINGS_KEY);return s?{...DEFAULT_SETTINGS,...JSON.parse(s)}:DEFAULT_SETTINGS;}catch(e){return DEFAULT_SETTINGS;}});
+  const [quests,setQuests]=useState(DEFAULT_QUESTS);
+  const [arsenal,setArsenal]=useState(DEFAULT_ARSENAL);
+  const [missions,setMissions]=useState(DEFAULT_MISSIONS);
+  const [recurring,setRecurring]=useState(DEFAULT_RECURRING);
+  const [bountyBank,setBountyBank]=useState(0);
+  const [totalXPBank,setTotalXPBank]=useState(0);
+  const [flash,setFlash]=useState(null);
+  const [activeQuest,setActiveQuest]=useState(null);
+  const [editingQuest,setEditingQuest]=useState(null);
+  const [addingQuest,setAddingQuest]=useState(false);
+  const [editingWeapon,setEditingWeapon]=useState(null);
+  const [addingWeapon,setAddingWeapon]=useState(false);
+  const [editingMission,setEditingMission]=useState(null);
+  const [addingMission,setAddingMission]=useState(false);
+
+  useEffect(()=>{
+    try{
+      // Auto-migrate: check current key, then fall back through previous versions
+      let raw=localStorage.getItem(STORAGE_KEY);
+      let migratedFrom=null;
+      if(!raw){for(let i=0;i<PREV_KEYS.length;i++){const v=localStorage.getItem(PREV_KEYS[i]);if(v){raw=v;migratedFrom=PREV_KEYS[i];break;}}}
+      if(raw){
+        const d=JSON.parse(raw);
+        const today=new Date().toDateString();
+        const isNewDay=localStorage.getItem(DAILY_KEY)!==today;
+        if(d.quests){
+          const savedMap={};d.quests.forEach(q=>{savedMap[q.id]=q;});
+          const merged=DEFAULT_QUESTS.map(q=>{
+            const sv=savedMap[q.id];if(!sv)return q;
+            const completed=(isNewDay&&sv.isDaily)?false:sv.completed;
+            return {...q,completed,isDaily:sv.isDaily||false};
+          });
+          d.quests.forEach(q=>{if(!DEFAULT_QUESTS.find(p=>p.id===q.id))merged.push(q);});
+          setQuests(merged);
+        }
+        if(d.arsenal){
+          const aMap={};d.arsenal.forEach(w=>{aMap[w.id]=w;});
+          const am=DEFAULT_ARSENAL.map(w=>{const sv=aMap[w.id];return sv?{...w,owned:sv.owned}:w;});
+          d.arsenal.forEach(w=>{if(!DEFAULT_ARSENAL.find(p=>p.id===w.id))am.push(w);});
+          setArsenal(am);
+        }
+        if(d.missions)setMissions(d.missions);
+        if(d.recurring){
+          const rMap={};d.recurring.forEach(r=>{rMap[r.id]=r;});
+          setRecurring(DEFAULT_RECURRING.map(r=>{const sv=rMap[r.id];return sv?{...r,totalCompletions:sv.totalCompletions||0}:r;}));
+        }
+        if(d.bountyBank!==undefined)setBountyBank(d.bountyBank);
+        if(d.totalXPBank!==undefined)setTotalXPBank(d.totalXPBank);
+        if(isNewDay)localStorage.setItem(DAILY_KEY,today);
+        if(migratedFrom)localStorage.setItem(STORAGE_KEY,raw);
+      }
+    }catch(e){console.warn("Solo Operator load:",e);}
+  },[]);
+
+  const save=useCallback((q,a,m,r,b,xb)=>{
+    try{localStorage.setItem(STORAGE_KEY,JSON.stringify({quests:q,arsenal:a,missions:m,recurring:r,bountyBank:b,totalXPBank:xb}));}catch(e){}
+  },[]);
+
+  const hasPin=!!localStorage.getItem(PIN_KEY);
+  function handleSetPin(hashed){localStorage.setItem(PIN_KEY,hashed);}
+  if(!unlocked) return <PinScreen onUnlock={()=>setUnlocked(true)} hasPin={hasPin} onSetPin={handleSetPin}/>;
+
+  const questXP=quests.reduce((s,q)=>q.completed?s+q.xp:s,0);
+  const totalXP=questXP+totalXPBank;
+  const rank=getRank(totalXP,rankThresholds);
+  const rankColor=RANK_COLORS[rank];
+  const nextXP=getNextXP(totalXP,rankThresholds);
+  const prevXP=rankThresholds[RANKS.indexOf(rank)]||0;
+  const rankPct=nextXP===prevXP?100:Math.round(((totalXP-prevXP)/(nextXP-prevXP))*100);
+  const completed=quests.filter(q=>q.completed).length;
+  const owned=arsenal.filter(w=>w.owned).length;
+  const ac=settings.accentColor||"#6366f1";
+  const hc=settings.highlightColor||"#facc15";
+  const isMobile=settings.mobile!==false;
+
+  function flash_(msg,color="#6366f1"){setFlash({msg,color});setTimeout(()=>setFlash(null),2800);}
+
+  function quickSave(){save(quests,arsenal,missions,recurring,bountyBank,totalXPBank);flash_("SAVED ✓","#4ade80");}
+  function saveRankThresholds(t){setRankThresholds(t);localStorage.setItem(RANK_KEY,JSON.stringify(t));flash_("RANKS UPDATED","#6366f1");}
+  function saveSettings(s){setSettings(s);localStorage.setItem(SETTINGS_KEY,JSON.stringify(s));}
+
+  function completeQuest(quest){
+    const u=quests.map(q=>q.id===quest.id?{...q,completed:true}:q);
+    const nb=bountyBank+quest.bounty;
+    setQuests(u);setBountyBank(nb);setActiveQuest(null);
+    save(u,arsenal,missions,recurring,nb,totalXPBank);
+    flash_(`+${quest.xp} XP  •  +${quest.bounty} BOUNTY`,RANK_COLORS[quest.rank]);
+  }
+
+  function uncompleteQuest(id){
+    const q=quests.find(x=>x.id===id);
+    const u=quests.map(x=>x.id===id?{...x,completed:false}:x);
+    const nb=bountyBank-(q?.bounty||0);
+    setQuests(u);setBountyBank(nb);save(u,arsenal,missions,recurring,nb,totalXPBank);
+  }
+
+  function buyWeapon(w){
+    // negative bounty allowed
+    const u=arsenal.map(x=>x.id===w.id?{...x,owned:true}:x);
+    const nb=bountyBank-w.cost;
+    setArsenal(u);setBountyBank(nb);save(quests,u,missions,recurring,nb,totalXPBank);
+    flash_(`${w.name} ACQUIRED`,RANK_COLORS["A"]);
+  }
+
+  function saveQuest(q){
+    const u=quests.find(x=>x.id===q.id)?quests.map(x=>x.id===q.id?q:x):[...quests,q];
+    setQuests(u);save(u,arsenal,missions,recurring,bountyBank,totalXPBank);
+    setEditingQuest(null);setAddingQuest(false);flash_("QUEST SAVED","#4ade80");
+  }
+
+  function deleteQuest(id){
+    const q=quests.find(x=>x.id===id);
+    const u=quests.filter(q=>q.id!==id);
+    const nb=q?.completed?bountyBank-(q.bounty||0):bountyBank;
+    setQuests(u);setBountyBank(nb);save(u,arsenal,missions,recurring,nb,totalXPBank);setActiveQuest(null);
+  }
+
+  function saveMission(m){
+    const u=missions.find(x=>x.id===m.id)?missions.map(x=>x.id===m.id?m:x):[...missions,m];
+    setMissions(u);save(quests,arsenal,u,recurring,bountyBank,totalXPBank);
+    setEditingMission(null);setAddingMission(false);flash_("MISSION UPDATED","#a78bfa");
+  }
+
+  function deleteMission(id){
+    const u=missions.filter(m=>m.id!==id);
+    setMissions(u);save(quests,arsenal,u,recurring,bountyBank,totalXPBank);setEditingMission(null);
+  }
+
+  function saveWeapon(w){
+    const u=arsenal.find(x=>x.id===w.id)?arsenal.map(x=>x.id===w.id?w:x):[...arsenal,w];
+    setArsenal(u);save(quests,u,missions,recurring,bountyBank,totalXPBank);
+    setEditingWeapon(null);setAddingWeapon(false);flash_("ITEM SAVED","#f97316");
+  }
+
+  function completeRecurring(rid){
+    const r=recurring.find(x=>x.id===rid);
+    if(!r)return;
+    const newCount=r.totalCompletions+1;
+    const milestone=r.milestones.find(m=>m.completions===newCount);
+    const bonusXP=milestone?milestone.xpBonus:0;
+    const gainedXP=r.xpPerCompletion+bonusXP;
+    const u=recurring.map(x=>x.id===rid?{...x,totalCompletions:newCount}:x);
+    const newXPBank=totalXPBank+gainedXP;
+    const newBounty=bountyBank+r.bountyPerCompletion;
+    setRecurring(u);setTotalXPBank(newXPBank);setBountyBank(newBounty);
+    save(quests,arsenal,missions,u,newBounty,newXPBank);
+    if(milestone){
+      flash_(`MILESTONE: ${milestone.label} — +${gainedXP} XP BONUS!`,"#facc15");
+    } else {
+      flash_(`+${gainedXP} XP${r.bountyPerCompletion>0?` • +${r.bountyPerCompletion}`:""}`,RANK_COLORS["D"]);
+    }
+  }
+
+  function handleImport(d){
+    if(d.quests)setQuests(d.quests);
+    if(d.arsenal)setArsenal(d.arsenal);
+    if(d.missions)setMissions(d.missions);
+    if(d.recurring)setRecurring(d.recurring);
+    if(d.bountyBank!==undefined)setBountyBank(d.bountyBank);
+    if(d.totalXPBank!==undefined)setTotalXPBank(d.totalXPBank);
+    save(d.quests||quests,d.arsenal||arsenal,d.missions||missions,d.recurring||recurring,d.bountyBank??bountyBank,d.totalXPBank??totalXPBank);
+    flash_("SAVE RESTORED","#4ade80");
+  }
+
+  const p={quests,arsenal,missions,recurring,bountyBank,totalXP,rankThresholds,quickSave,saveRankThresholds,settings,saveSettings,ac,hc,isMobile,activeQuest,setActiveQuest,completeQuest,uncompleteQuest,deleteQuest,buyWeapon,saveQuest,saveMission,saveWeapon,deleteMission,completeRecurring,editingQuest,setEditingQuest,editingMission,setEditingMission,editingWeapon,setEditingWeapon,addingQuest,setAddingQuest,addingWeapon,setAddingWeapon,addingMission,setAddingMission,setTab,rank,rankColor,completed,owned,flash_};
+
+  return(
+    <div style={{minHeight:"100vh",background:"#050508",paddingBottom:80,fontSize:settings.fontSize}}>
+      {flash&&<div style={{position:"fixed",top:20,left:"50%",zIndex:1000,background:"#0a0a14",border:`1px solid ${flash.color}`,padding:"10px 24px",fontSize:10,letterSpacing:4,color:flash.color,animation:"flashIn 2.8s forwards",whiteSpace:"nowrap",boxShadow:`0 0 20px ${flash.color}44`}}>{flash.msg}</div>}
+
+      {/* HEADER */}
+      <div style={{background:"#0d0d1a",borderBottom:"1px solid #111",padding:"18px 20px 12px",position:"sticky",top:0,zIndex:50}}>
+        <div style={{maxWidth:760,margin:"0 auto"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+            <div>
+              <div style={{fontSize:9,letterSpacing:6,color:"#6366f133",marginBottom:3,fontFamily:"'Share Tech Mono',monospace"}}>SOLO OPERATOR v6</div>
+              <div style={{fontSize:22,fontWeight:700,color:"#fff",letterSpacing:3,fontFamily:"'Rajdhani',sans-serif"}}>LAYNE LEATHERWOOD</div>
+              <div style={{fontSize:11,letterSpacing:2,color:"#555",marginTop:1,fontFamily:"'Share Tech Mono',monospace"}}>{RANK_TITLES[rank]}</div>
+            </div>
+            <div style={{display:"flex",gap:12,alignItems:"center"}}>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:7,letterSpacing:3,color:"#444"}}>BOUNTY</div>
+                <div style={{fontSize:15,fontWeight:900,color:bountyBank<0?"#fb7185":hc}}>{bountyBank<0?"-$"+Math.abs(bountyBank).toLocaleString():"$"+bountyBank.toLocaleString()}</div>
+              </div>
+              <RankBadge rank={rank} rankColor={rankColor}/>
+              <button onClick={quickSave} title="Quick Save" style={{background:"none",border:"1px solid "+hc+"33",color:hc,padding:"6px 9px",cursor:"pointer",fontSize:14,lineHeight:1,borderRadius:2}}>💾</button>
+              <button onClick={()=>setUnlocked(false)} title="Lock app" style={{background:"none",border:"1px solid #1a1a2e",color:"#444",padding:"6px 9px",cursor:"pointer",fontSize:14,lineHeight:1,borderRadius:2}}>🔒</button>
+            </div>
+          </div>
+          <div style={{marginTop:10,height:3,background:"#0a0a14",overflow:"hidden"}}>
+            <div style={{height:"100%",width:`${rankPct}%`,background:`linear-gradient(90deg,${ac},${rankColor})`,transition:"width 0.6s"}}/>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",marginTop:3}}>
+            <span style={{fontSize:7,color:"#2a2a2a",letterSpacing:2}}>{totalXP.toLocaleString()} XP</span>
+            <span style={{fontSize:7,color:"#2a2a2a",letterSpacing:2}}>{rankPct}% → {rank==="SS"?"SSS ∞":RANKS[RANKS.indexOf(rank)+1]||"MAX"}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* CONTENT */}
+      <div style={{maxWidth:760,margin:"0 auto",padding:"16px",animation:"slideIn 0.3s ease"}}>
+        {tab==="home"&&<HomeTab {...p}/>}
+        {tab==="quests"&&<QuestsTab {...p}/>}
+        {tab==="arsenal"&&<ArsenalTab {...p}/>}
+        {tab==="missions"&&<MissionsTab {...p}/>}
+        {tab==="recurring"&&<RecurringTab {...p}/>}
+      </div>
+
+      {/* DATA PANEL */}
+      <DataPanel quests={quests} arsenal={arsenal} missions={missions} recurring={recurring} bountyBank={bountyBank} totalXPBank={totalXPBank} rankThresholds={rankThresholds} settings={settings} onImport={handleImport} onSaveRankThresholds={saveRankThresholds} onSaveSettings={saveSettings} onChangePin={()=>setUnlocked(false)}/>
+
+      {/* NAV */}
+      <div style={{position:"fixed",bottom:0,left:0,right:0,background:"#06060f",borderTop:"1px solid #111",display:"flex",zIndex:50}}>
+        {[{id:"home",label:"HOME",icon:"⬡"},{id:"quests",label:"QUESTS",icon:"◈"},{id:"arsenal",label:"ARSENAL",icon:"⚔"},{id:"missions",label:"MISSIONS",icon:"◎"},{id:"recurring",label:"DAILY",icon:"↻"}].map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,padding:"11px 4px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,borderTop:`2px solid ${tab===t.id?ac:"transparent"}`}}>
+            <span style={{fontSize:13,color:tab===t.id?ac:"#2a2a2a"}}>{t.icon}</span>
+            <span style={{fontSize:6,letterSpacing:2,color:tab===t.id?ac:"#2a2a2a",fontFamily:"'Courier New',monospace"}}>{t.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RankBadge({rank,rankColor}){
+  const isSSS=rank==="SSS";
+  return(
+    <div style={{textAlign:"center",border:`2px solid ${rankColor}`,padding:"5px 12px",animation:isSSS?"sssGlow 2s infinite":"glow 3s infinite",background:isSSS?"#111":undefined}}>
+      {isSSS
+        ? <div style={{fontSize:14,fontWeight:900,letterSpacing:2,lineHeight:1,background:"linear-gradient(90deg,#fff,#aaa,#fff)",backgroundSize:"200% auto",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",animation:"shimmer 3s linear infinite"}}>SSS</div>
+        : <div style={{fontSize:20,fontWeight:700,color:rankColor,letterSpacing:3,lineHeight:1,fontFamily:"'Rajdhani',sans-serif"}}>{rank}</div>
+      }
+      <div style={{fontSize:7,letterSpacing:2,color:"#444",marginTop:1}}>RANK</div>
+    </div>
+  );
+}
+
+function HomeTab(p){
+  const next=p.quests.find(q=>!q.completed);
+  const pending=p.quests.filter(q=>!q.completed&&q.bounty>0).reduce((s,q)=>s+q.bounty,0);
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:16}}>
+      {/* RANK LADDER */}
+      <RankLadder currentRank={p.rank}/>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        {[{label:"TOTAL XP",value:p.totalXP.toLocaleString(),color:p.ac},{label:"QUESTS",value:`${p.completed}/${p.quests.length}`,color:p.rankColor},{label:"PIPELINE",value:`${pending.toLocaleString()}`,color:"#4ade80"},{label:"ARSENAL",value:`${p.owned}/${p.arsenal.length}`,color:"#f97316"}].map(s=>(
+          <div key={s.label} style={{background:"#080810",border:"1px solid #0d0d1a",borderLeft:`3px solid ${s.color}`,padding:"12px 14px"}}>
+            <div style={{fontSize:9,letterSpacing:3,color:"#444",marginBottom:3,fontFamily:"'Share Tech Mono',monospace"}}>{s.label}</div>
+            <div style={{fontSize:22,fontWeight:700,color:s.color,lineHeight:1,fontFamily:"'Rajdhani',sans-serif"}}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+      {next&&<div><SecHead label="ACTIVE QUEST" action="ALL QUESTS" onAction={()=>p.setTab("quests")}/><QuestCard quest={next} active={p.activeQuest?.id===next.id} onSelect={()=>p.setActiveQuest(p.activeQuest?.id===next.id?null:next)} onComplete={p.completeQuest} onDelete={p.deleteQuest} highlight/></div>}
+      <div><SecHead label="RECURRING MISSIONS" action="VIEW ALL" onAction={()=>p.setTab("recurring")}/>{p.recurring.slice(0,2).map(r=><RecurringMiniCard key={r.id} r={r} ac={p.ac} onComplete={p.completeRecurring}/>)}</div>
+      <div><SecHead label="LONG-TERM MISSIONS" action="VIEW ALL" onAction={()=>p.setTab("missions")}/>{p.missions.slice(0,2).map(m=><MiniMission key={m.id} mission={m}/>)}</div>
+      <div><SecHead label="QUEST BOARD" action="VIEW ALL" onAction={()=>p.setTab("quests")}/>{p.quests.filter(q=>!q.completed).slice(1,4).map(q=><QuestCard key={q.id} quest={q} active={p.activeQuest?.id===q.id} onSelect={()=>p.setActiveQuest(p.activeQuest?.id===q.id?null:q)} onComplete={p.completeQuest} onDelete={p.deleteQuest}/>)}</div>
+    </div>
+  );
+}
+
+function RankLadder({currentRank}){
+  const idx=RANKS.indexOf(currentRank);
+  return(
+    <div style={{background:"#080810",border:"1px solid #0d0d1a",padding:"14px 16px"}}>
+      <div style={{fontSize:9,letterSpacing:4,color:"#6366f133",marginBottom:12,fontFamily:"'Share Tech Mono',monospace"}}>RANK PROGRESSION</div>
+      <div style={{display:"flex",gap:4,alignItems:"center",overflowX:"auto",paddingBottom:4,scrollbarWidth:"none"}}>
+        {RANKS.map((r,i)=>{
+          const isCurrent=r===currentRank;
+          const isPast=i<idx;
+          const isSSS=r==="SSS";
+          const color=RANK_COLORS[r];
+          return(
+            <div key={r} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flexShrink:0,opacity:isSSS?0.3:1}}>
+              <div style={{
+                width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",
+                border:`1px solid ${isCurrent?color:isPast?color+"44":"#1a1a2e"}`,
+                background:isCurrent?color+"22":isPast?"#0a0a14":"transparent",
+                fontSize:11,fontWeight:700,
+                color:isCurrent?color:isPast?color+"66":"#222",
+                fontFamily:"'Rajdhani',sans-serif",
+              }}>
+                {isPast&&!isCurrent&&<span style={{fontSize:6}}>✓</span>}
+                {!isPast&&r}
+                {isSSS&&<span style={{fontSize:6}}>∞</span>}
+              </div>
+              <div style={{fontSize:7,letterSpacing:1,color:isCurrent?color:"#1a1a2e",textAlign:"center",maxWidth:36,lineHeight:1.2,fontFamily:"'Share Tech Mono',monospace"}}>
+                {isCurrent?"YOU":RANK_TITLES[r].split("·")[0].trim()}
+              </div>
+              {i<RANKS.length-1&&<div style={{width:8,height:1,background:"#1a1a2e",position:"absolute"}}/>}
+            </div>
+          );
+        })}
+      </div>
+      <div style={{marginTop:10,fontSize:11,color:"#555",fontStyle:"italic",lineHeight:1.6,fontFamily:"'Barlow',sans-serif"}}>
+        "{RANK_TITLES[currentRank]}"
+      </div>
+    </div>
+  );
+}
+
+function RecurringTab(p){
+  return(
+    <div>
+      <SecHead label="RECURRING MISSIONS"/>
+      <div style={{fontSize:12,color:"#555",letterSpacing:1,marginBottom:14,lineHeight:1.7,fontFamily:"'Barlow',sans-serif"}}>
+        Complete these every week or month. Milestones unlock bonus XP and badges. Consistency compounds.
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        {p.recurring.map(r=><RecurringCard key={r.id} r={r} ac={p.ac} onComplete={p.completeRecurring}/>)}
+      </div>
+    </div>
+  );
+}
+
+function RecurringCard({r,ac,onComplete}){
+  ac=ac||"#6366f1";
+  const [expanded,setExpanded]=useState(false);
+  const nextMs=r.milestones.find(m=>m.completions>r.totalCompletions);
+  const lastMs=r.milestones.filter(m=>m.completions<=r.totalCompletions).pop();
+  const pct=nextMs?Math.round((r.totalCompletions/nextMs.completions)*100):100;
+  return(
+    <div style={{background:"#080810",border:"1px solid #111",borderLeft:`3px solid ${ac}`,padding:14}}>
+      <div onClick={()=>setExpanded(!expanded)} style={{cursor:"pointer"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:15,marginBottom:2}}>{r.icon} <span style={{fontWeight:600,color:"#e5e5e5",fontFamily:"'Barlow',sans-serif"}}>{r.title}</span></div>
+            <div style={{fontSize:10,letterSpacing:2,color:ac,marginTop:2,fontFamily:"'Share Tech Mono',monospace"}}>{r.frequency.toUpperCase()} • +{r.xpPerCompletion} XP{r.bountyPerCompletion>0?` • +${r.bountyPerCompletion}`:""}</div>
+          </div>
+          <div style={{textAlign:"right",flexShrink:0,marginLeft:12}}>
+            <div style={{fontSize:16,fontWeight:900,color:ac}}>{r.totalCompletions}x</div>
+            <div style={{fontSize:7,color:"#444"}}>COMPLETED</div>
+          </div>
+        </div>
+        {nextMs&&(
+          <div style={{marginBottom:8}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+              <span style={{fontSize:8,color:"#555"}}>→ {nextMs.label}</span>
+              <span style={{fontSize:8,color:ac}}>{r.totalCompletions}/{nextMs.completions}</span>
+            </div>
+            <div style={{height:2,background:"#0d0d1a"}}><div style={{height:"100%",width:`${pct}%`,background:"linear-gradient(90deg,#6366f1,#a78bfa)",transition:"width 0.6s"}}/></div>
+          </div>
+        )}
+      </div>
+      {expanded&&(
+        <div style={{borderTop:"1px solid #0a0a14",paddingTop:10,marginTop:4}}>
+          <div style={{fontSize:13,color:"#666",lineHeight:1.7,marginBottom:10,fontFamily:"'Barlow',sans-serif"}}>{r.description}</div>
+          <div style={{marginBottom:10}}>
+            <Lbl>MILESTONE REWARDS</Lbl>
+            <div style={{display:"flex",flexDirection:"column",gap:4,marginTop:4}}>
+              {r.milestones.map((ms,i)=>{
+                const done=r.totalCompletions>=ms.completions;
+                return(
+                  <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",padding:"6px 10px",background:done?"#060f06":"#0a0a0a",border:`1px solid ${done?"#4ade8033":"#111"}`}}>
+                    <span style={{fontSize:8,color:done?"#4ade80":"#333",flexShrink:0}}>{done?"✓":ms.completions+"x"}</span>
+                    <div>
+                      <div style={{fontSize:9,color:done?"#4ade80":"#555",fontWeight:700}}>{ms.label}</div>
+                      <div style={{fontSize:8,color:done?"#4ade8077":"#333",marginTop:1}}>{ms.reward} {ms.xpBonus>0&&`(+${ms.xpBonus} BONUS XP)`}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          {lastMs&&<div style={{fontSize:8,color:"#4ade80",padding:"6px 10px",background:"#060f06",border:"1px solid #4ade8022",marginBottom:10}}>✓ LAST UNLOCKED: {lastMs.label}</div>}
+        </div>
+      )}
+      <div style={{display:"flex",gap:7,marginTop:8}}>
+        <button onClick={()=>onComplete(r.id)} style={{flex:2,background:ac+"33",border:"1px solid "+ac,color:ac,padding:"8px",fontSize:8,letterSpacing:3,cursor:"pointer",fontFamily:"'Courier New',monospace"}}>✓ MARK COMPLETE</button>
+        <button onClick={()=>setExpanded(!expanded)} style={{background:"#1a1a2e",border:"1px solid #2a2a3e",color:"#666",padding:"8px 12px",fontSize:8,cursor:"pointer",fontFamily:"'Courier New',monospace"}}>{expanded?"▲":"▼"}</button>
+      </div>
+    </div>
+  );
+}
+
+function RecurringMiniCard({r,ac,onComplete}){
+  ac=ac||"#6366f1";
+  const nextMs=r.milestones.find(m=>m.completions>r.totalCompletions);
+  const pct=nextMs?Math.round((r.totalCompletions/nextMs.completions)*100):100;
+  return(
+    <div style={{background:"#080810",border:"1px solid #0d0d1a",borderLeft:`3px solid ${ac}`,padding:"10px 14px",marginBottom:6}}>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+        <span style={{fontSize:11,color:"#ccc"}}>{r.icon} {r.title}</span>
+        <span style={{fontSize:9,color:ac}}>{r.totalCompletions}x</span>
+      </div>
+      {nextMs&&<div style={{height:2,background:"#0d0d1a",marginBottom:5}}><div style={{height:"100%",width:`${pct}%`,background:"linear-gradient(90deg,#6366f1,#a78bfa)",transition:"width 0.6s"}}/></div>}
+      <div style={{fontSize:7,color:"#444",letterSpacing:2}}>{nextMs?`NEXT: ${nextMs.label} at ${nextMs.completions}x`:"ALL MILESTONES CLEARED"}</div>
+    </div>
+  );
+}
+
+function QuestsTab(p){
+  const [filter,setFilter]=useState("ALL");
+  if(p.addingQuest||p.editingQuest)return<QuestEditor quest={p.editingQuest} onSave={p.saveQuest} onCancel={()=>{p.setEditingQuest(null);p.setAddingQuest(false);}}/>;
+  const filtered=p.quests.filter(q=>filter==="ALL"?true:filter==="ACTIVE"?!q.completed:filter==="COMPLETE"?q.completed:q.type===filter);
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+        <SecHead label="QUEST BOARD"/>
+        <FatBtn color="#6366f1" onClick={()=>p.setAddingQuest(true)}>+ NEW QUEST</FatBtn>
+      </div>
+      <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:8,marginBottom:12,scrollbarWidth:"none"}}>
+        {["ALL","ACTIVE","COMPLETE",...QUEST_TYPES].map(f=><FBtn key={f} label={f} active={filter===f} color="#6366f1" onClick={()=>setFilter(f)}/>)}
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:6}}>
+        {filtered.map(q=><QuestCard key={q.id} quest={q} active={p.activeQuest?.id===q.id} onSelect={()=>p.setActiveQuest(p.activeQuest?.id===q.id?null:q)} onComplete={p.completeQuest} onDelete={p.deleteQuest} onEdit={()=>p.setEditingQuest(q)} onUncomplete={p.uncompleteQuest}/>)}
+        {filtered.length===0&&<Empty text="NO QUESTS FOUND"/>}
+      </div>
+    </div>
+  );
+}
+
+function ArsenalTab(p){
+  const [filter,setFilter]=useState("ALL");
+  if(p.addingWeapon||p.editingWeapon)return<WeaponEditor weapon={p.editingWeapon} onSave={p.saveWeapon} onCancel={()=>{p.setEditingWeapon(null);p.setAddingWeapon(false);}}/>;
+  const filtered=p.arsenal.filter(w=>filter==="ALL"?true:filter==="OWNED"?w.owned:filter==="AVAILABLE"?!w.owned:w.category===filter);
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+        <div><SecHead label="ARSENAL"/><div style={{fontSize:9,color:p.bountyBank<0?"#fb7185":p.hc,letterSpacing:2,marginTop:1}}>BOUNTY: {p.bountyBank<0?"-$"+Math.abs(p.bountyBank).toLocaleString():"$"+p.bountyBank.toLocaleString()}</div></div>
+        <FatBtn color="#f97316" onClick={()=>p.setAddingWeapon(true)}>+ ADD ITEM</FatBtn>
+      </div>
+      <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:8,marginBottom:12,scrollbarWidth:"none"}}>
+        {["ALL","OWNED","AVAILABLE",...WEAPON_CATEGORIES].map(f=><FBtn key={f} label={f} active={filter===f} color="#f97316" onClick={()=>setFilter(f)}/>)}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(250px,1fr))",gap:10}}>
+        {filtered.map(w=><WeaponCard key={w.id} weapon={w} bountyBank={p.bountyBank} onBuy={p.buyWeapon} onEdit={()=>p.setEditingWeapon(w)}/>)}
+      </div>
+    </div>
+  );
+}
+
+function MissionsTab(p){
+  if(p.addingMission||p.editingMission)return<MissionEditor mission={p.editingMission} onSave={p.saveMission} onCancel={()=>{p.setEditingMission(null);p.setAddingMission(false);}}/>;
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+        <SecHead label="LONG-TERM MISSIONS"/>
+        <FatBtn color="#a78bfa" onClick={()=>p.setAddingMission(true)}>+ NEW MISSION</FatBtn>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        {p.missions.map(m=>{
+          const pct=Math.min(100,Math.round((m.current/m.target)*100));
+          return(
+            <div key={m.id} style={{background:"#080810",border:"1px solid #111",borderTop:"2px solid #a78bfa",padding:16}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10,flexWrap:"wrap",gap:8}}>
+                <div style={{flex:1}}><div style={{fontSize:18,marginBottom:3}}>{m.icon}</div><div style={{fontSize:15,fontWeight:600,color:"#e5e5e5",fontFamily:"'Barlow',sans-serif"}}>{m.title}</div><div style={{fontSize:12,color:"#555",marginTop:2,lineHeight:1.6,fontFamily:"'Barlow',sans-serif"}}>{m.description}</div></div>
+                <div style={{textAlign:"right"}}><div style={{fontSize:22,fontWeight:700,color:"#a78bfa",fontFamily:"'Rajdhani',sans-serif"}}>{pct}%</div><div style={{fontSize:10,color:"#444",fontFamily:"'Share Tech Mono',monospace"}}>{Number(m.current).toLocaleString()} / {Number(m.target).toLocaleString()} {m.unit}</div></div>
+              </div>
+              <div style={{height:5,background:"#0d0d1a",marginBottom:10}}><div style={{height:"100%",width:`${pct}%`,background:"linear-gradient(90deg,#6366f1,#a78bfa)",transition:"width 0.6s"}}/></div>
+              {m.milestones&&<div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>{m.milestones.map((ms,i)=>{const done=m.current>=ms.value;return<div key={i} style={{fontSize:7,letterSpacing:2,padding:"2px 7px",border:`1px solid ${done?"#a78bfa":"#1a1a2e"}`,color:done?"#a78bfa":"#333"}}>{ms.label}{done?" ✓":""}</div>;})}</div>}
+              <div style={{display:"flex",gap:7}}>
+                <button onClick={()=>p.setEditingMission(m)} style={bs("#1a1a2e","#a78bfa","flex:2")}>✎ UPDATE</button>
+                <button onClick={()=>p.deleteMission(m.id)} style={bs("#1a0a0a","#fb7185","")}>✕</button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function QuestCard({quest,active,onSelect,onComplete,onDelete,onEdit,onUncomplete,highlight}){
+  const rc=RANK_COLORS[quest.rank];const tc=TYPE_COLORS[quest.type];
+  return(
+    <div style={{background:quest.completed?"#070710":active?"#0e0e1f":"#080810",border:`1px solid ${active?rc+"33":highlight&&!quest.completed?rc+"22":"#0d0d1a"}`,borderLeft:`3px solid ${quest.completed?"#151515":rc}`,opacity:quest.completed?0.4:1,transition:"all 0.2s",marginBottom:6}}>
+      <div onClick={onSelect} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",cursor:"pointer",userSelect:"none"}}>
+        <div style={{width:30,height:30,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",border:`1px solid ${quest.completed?"#222":rc}`,fontSize:11,fontWeight:700,color:quest.completed?"#333":rc,fontFamily:"'Rajdhani',sans-serif"}}>{quest.completed?"✓":quest.rank}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:14,fontWeight:600,color:quest.completed?"#222":"#e5e5e5",textDecoration:quest.completed?"line-through":"none",fontFamily:"'Barlow',sans-serif"}}>{quest.title}</div>
+          <div style={{fontSize:10,color:quest.completed?"#1a1a1a":tc,letterSpacing:2,marginTop:2,fontFamily:"'Share Tech Mono',monospace"}}>{quest.type} • +{quest.xp}XP{quest.bounty>0?` • ${quest.bounty}`:""}{quest.isDaily?" • 🔄 DAILY":""}</div>
+        </div>
+        {!quest.completed&&<span style={{color:"#222",fontSize:11}}>{active?"▼":"›"}</span>}
+      </div>
+      {active&&(
+        <div style={{padding:"0 14px 14px",borderTop:"1px solid #0a0a14"}}>
+          {quest.lore&&<div style={{fontSize:12,color:"#6366f177",fontStyle:"italic",padding:"10px 0 8px",borderBottom:"1px solid #0a0a14",lineHeight:1.7,fontFamily:"'Barlow',sans-serif"}}>"{quest.lore}"</div>}
+          <div style={{marginTop:10}}><Lbl>OBJECTIVE</Lbl><div style={{fontSize:13,color:"#bbb",lineHeight:1.7,fontFamily:"'Barlow',sans-serif"}}>{quest.objective}</div></div>
+          {quest.reward&&<div style={{marginTop:8}}><Lbl>REWARDS</Lbl><div style={{fontSize:12,color:"#4ade80",lineHeight:1.7,fontFamily:"'Barlow',sans-serif"}}>{quest.reward}</div></div>}
+          <div style={{display:"flex",gap:7,marginTop:12,flexWrap:"wrap"}}>
+            {!quest.completed&&<button onClick={()=>onComplete(quest)} style={bs("#6366f133","#6366f1","flex:2")}>✓ COMPLETE</button>}
+            {quest.completed&&onUncomplete&&<button onClick={()=>onUncomplete(quest.id)} style={bs("#1a1a2e","#888","flex:1")}>↺ REOPEN</button>}
+            {onEdit&&!quest.completed&&<button onClick={onEdit} style={bs("#1a1a2e","#555","")}>✎</button>}
+            <button onClick={()=>onDelete(quest.id)} style={bs("#1a0a0a","#fb718577","")}>✕</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WeaponCard({weapon,bountyBank,onBuy,onEdit}){
+  const deficit=weapon.cost-bountyBank;
+  return(
+    <div style={{background:weapon.owned?"#060f06":"#080810",border:`1px solid ${weapon.owned?"#1a2e1a":"#0d0d1a"}`,borderTop:`2px solid ${weapon.owned?"#4ade80":"#f97316"}`,padding:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+        <div><div style={{fontSize:22,marginBottom:3}}>{weapon.icon||"⚙️"}</div><div style={{fontSize:14,fontWeight:600,color:weapon.owned?"#e5e5e5":"#ccc",fontFamily:"'Barlow',sans-serif"}}>{weapon.name}</div><div style={{fontSize:10,letterSpacing:2,color:weapon.owned?"#4ade80":"#f97316",marginTop:2,fontFamily:"'Share Tech Mono',monospace"}}>{weapon.category}{weapon.owned?" • OWNED":""}</div></div>
+        <div style={{fontSize:16,fontWeight:700,color:weapon.owned?"#4ade80":"#facc15",fontFamily:"'Rajdhani',sans-serif"}}>{weapon.cost===0?"FREE":`${weapon.cost}`}</div>
+      </div>
+      <div style={{fontSize:12,color:"#666",lineHeight:1.6,marginBottom:10,fontFamily:"'Barlow',sans-serif"}}>{weapon.description}</div>
+      {weapon.stats&&<div style={{display:"flex",flexDirection:"column",gap:4,marginBottom:10}}>{Object.entries(weapon.stats).map(([k,v])=><div key={k} style={{display:"flex",alignItems:"center",gap:7}}><span style={{fontSize:7,letterSpacing:2,color:"#333",width:65,textTransform:"uppercase"}}>{k}</span><div style={{flex:1,height:2,background:"#0d0d1a"}}><div style={{height:"100%",width:`${v}%`,background:v>80?"#4ade80":v>50?"#facc15":"#f97316"}}/></div></div>)}</div>}
+      <div style={{display:"flex",gap:7}}>
+        {!weapon.owned&&weapon.cost>0&&<button onClick={()=>onBuy(weapon)} style={bs(deficit>0?"#0a0a0a":"#061406",deficit>0?"#f97316":"#4ade80","flex:2")}>{deficit>0?"⚔ ACQUIRE (-$"+deficit+" deficit)":"⚔ ACQUIRE"}</button>}
+        {weapon.owned&&<div style={{flex:2,textAlign:"center",padding:"6px",fontSize:8,letterSpacing:3,color:"#4ade80"}}>✓ EQUIPPED</div>}
+        {!weapon.owned&&weapon.cost===0&&<div style={{flex:2,textAlign:"center",padding:"6px",fontSize:8,letterSpacing:3,color:"#6366f1"}}>∞ FREE</div>}
+        <button onClick={onEdit} style={bs("#1a1a2e","#555","")}>✎</button>
+      </div>
+    </div>
+  );
+}
+
+function MiniMission({mission}){
+  const pct=Math.min(100,Math.round((mission.current/mission.target)*100));
+  return<div style={{background:"#080810",border:"1px solid #0d0d1a",padding:"10px 14px",marginBottom:6}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><span style={{fontSize:11,color:"#ccc"}}>{mission.icon} {mission.title}</span><span style={{fontSize:9,color:"#a78bfa"}}>{pct}%</span></div><div style={{height:2,background:"#0d0d1a"}}><div style={{height:"100%",width:`${pct}%`,background:"linear-gradient(90deg,#6366f1,#a78bfa)",transition:"width 0.6s"}}/></div></div>;
+}
+
+function QuestEditor({quest,onSave,onCancel}){
+  const [f,setF]=useState(quest||{id:`q${Date.now()}`,rank:"D",type:"FIELD",bounty:0,xp:100,title:"",objective:"",reward:"",lore:"",completed:false,isDaily:false,isCost:false});
+  const absBounty=Math.abs(f.bounty);
+  const s=(k,v)=>setF(p=>({...p,[k]:v}));
+  return<Shell title={quest?"EDIT QUEST":"NEW QUEST"} color="#6366f1" onSave={()=>onSave(f)} onCancel={onCancel} disabled={!f.title}><div><Lbl>TITLE</Lbl><input value={f.title} onChange={e=>s("title",e.target.value)} placeholder="Quest name..."/></div><TwoCol><div><Lbl>RANK</Lbl><select value={f.rank} onChange={e=>s("rank",e.target.value)}>{RANKS.filter(r=>r!=="SSS").map(r=><option key={r}>{r}</option>)}</select></div><div><Lbl>TYPE</Lbl><select value={f.type} onChange={e=>s("type",e.target.value)}>{QUEST_TYPES.map(t=><option key={t}>{t}</option>)}</select></div></TwoCol><TwoCol><div><Lbl>XP</Lbl><input type="number" value={f.xp} onChange={e=>s("xp",+e.target.value)}/></div><div><Lbl>{f.isCost?"COST ($)":"BOUNTY ($)"}</Lbl><input type="number" min={0} value={absBounty} onChange={e=>{const v=+e.target.value;s("bounty",f.isCost?-v:v);}}/><div onClick={()=>{const next=!f.isCost;setF(p=>({...p,isCost:next,bounty:next?-Math.abs(p.bounty):Math.abs(p.bounty)}));}} style={{display:"flex",alignItems:"center",gap:8,marginTop:7,cursor:"pointer"}}><div style={{width:16,height:16,border:"2px solid "+(f.isCost?"#fb7185":"#333"),background:f.isCost?"#fb718533":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,borderRadius:2}}>{f.isCost&&<span style={{color:"#fb7185",fontSize:10,fontWeight:700,lineHeight:1}}>✓</span>}</div><span style={{fontSize:10,color:f.isCost?"#fb7185":"#555",fontFamily:"'Share Tech Mono',monospace",letterSpacing:2}}>COST / PENALTY</span></div></div></TwoCol><div><Lbl>OBJECTIVE</Lbl><textarea rows={2} value={f.objective} onChange={e=>s("objective",e.target.value)} style={{resize:"vertical"}}/></div><div><Lbl>LORE</Lbl><input value={f.lore} onChange={e=>s("lore",e.target.value)} placeholder="Story behind this quest..."/></div><div><Lbl>REWARDS</Lbl><input value={f.reward} onChange={e=>s("reward",e.target.value)} placeholder="XP, skills, unlocks..."/></div><div onClick={()=>s("isDaily",!f.isDaily)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:f.isDaily?"#0a0f06":"#0a0a14",border:`1px solid ${f.isDaily?"#4ade8033":"#1a1a2e"}`,cursor:"pointer"}}><div style={{width:18,height:18,border:`2px solid ${f.isDaily?"#4ade80":"#333"}`,background:f.isDaily?"#4ade8033":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{f.isDaily&&<span style={{color:"#4ade80",fontSize:11,fontWeight:700}}>✓</span>}</div><div style={{fontSize:11,color:f.isDaily?"#4ade80":"#666",fontFamily:"'Share Tech Mono',monospace",letterSpacing:2}}>DAILY QUEST — resets at midnight</div></div></Shell>;
+}
+
+function WeaponEditor({weapon,onSave,onCancel}){
+  const [f,setF]=useState(weapon||{id:`w${Date.now()}`,name:"",category:"TOOL",description:"",cost:0,owned:false,icon:"⚙️",stats:{power:50,efficiency:50,durability:80}});
+  const s=(k,v)=>setF(p=>({...p,[k]:v}));
+  const ss=(k,v)=>setF(p=>({...p,stats:{...p.stats,[k]:+v}}));
+  return<Shell title={weapon?"EDIT ITEM":"NEW ARSENAL ITEM"} color="#f97316" onSave={()=>onSave(f)} onCancel={onCancel} disabled={!f.name}><TwoCol><div style={{maxWidth:70}}><Lbl>ICON</Lbl><input value={f.icon} onChange={e=>s("icon",e.target.value)}/></div><div><Lbl>NAME</Lbl><input value={f.name} onChange={e=>s("name",e.target.value)} placeholder="Item name..."/></div></TwoCol><TwoCol><div><Lbl>CATEGORY</Lbl><select value={f.category} onChange={e=>s("category",e.target.value)}>{WEAPON_CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></div><div><Lbl>COST ($)</Lbl><input type="number" value={f.cost} onChange={e=>s("cost",+e.target.value)}/></div></TwoCol><div><Lbl>DESCRIPTION</Lbl><textarea rows={2} value={f.description} onChange={e=>s("description",e.target.value)} style={{resize:"vertical"}}/></div><div><Lbl>STATS (0-100)</Lbl><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginTop:4}}>{["power","efficiency","durability"].map(st=><div key={st}><Lbl>{st.toUpperCase()}</Lbl><input type="number" min={0} max={100} value={f.stats?.[st]||0} onChange={e=>ss(st,e.target.value)}/></div>)}</div></div><div style={{display:"flex",alignItems:"center",gap:8}}><input type="checkbox" checked={f.owned} onChange={e=>s("owned",e.target.checked)} id="owned" style={{width:"auto"}}/><label htmlFor="owned" style={{fontSize:9,letterSpacing:3,color:"#666",cursor:"pointer"}}>ALREADY OWNED</label></div></Shell>;
+}
+
+function MissionEditor({mission,onSave,onCancel}){
+  const [f,setF]=useState(mission||{id:`m${Date.now()}`,title:"",description:"",target:100,current:0,unit:"",icon:"🎯",milestones:[]});
+  const [ml,setMl]=useState("");const [mv,setMv]=useState("");
+  const s=(k,v)=>setF(p=>({...p,[k]:v}));
+  const addMs=()=>{if(!ml||!mv)return;setF(p=>({...p,milestones:[...(p.milestones||[]),{label:ml,value:+mv}]}));setMl("");setMv("");};
+  return<Shell title={mission?"UPDATE MISSION":"NEW MISSION"} color="#a78bfa" onSave={()=>onSave(f)} onCancel={onCancel} disabled={!f.title}><TwoCol><div style={{maxWidth:70}}><Lbl>ICON</Lbl><input value={f.icon} onChange={e=>s("icon",e.target.value)}/></div><div><Lbl>TITLE</Lbl><input value={f.title} onChange={e=>s("title",e.target.value)}/></div></TwoCol><div><Lbl>DESCRIPTION</Lbl><textarea rows={2} value={f.description} onChange={e=>s("description",e.target.value)} style={{resize:"vertical"}}/></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}><div><Lbl>TARGET</Lbl><input type="number" value={f.target} onChange={e=>s("target",+e.target.value)}/></div><div><Lbl>CURRENT</Lbl><input type="number" value={f.current} onChange={e=>s("current",+e.target.value)}/></div><div><Lbl>UNIT</Lbl><input value={f.unit} onChange={e=>s("unit",e.target.value)} placeholder="$, clients..."/></div></div><div><Lbl>MILESTONES</Lbl><div style={{display:"flex",gap:6,marginTop:4,marginBottom:6}}><input value={ml} onChange={e=>setMl(e.target.value)} placeholder="Label"/><input value={mv} onChange={e=>setMv(e.target.value)} placeholder="Value" type="number" style={{maxWidth:90}}/><button onClick={addMs} style={bs("#6366f133","#6366f1","")}>+</button></div>{(f.milestones||[]).map((ms,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"4px 10px",background:"#0d0d1a",marginBottom:3}}><span style={{fontSize:10,color:"#777"}}>{ms.label} — {ms.value}</span><button onClick={()=>setF(p=>({...p,milestones:p.milestones.filter((_,j)=>j!==i)}))} style={{background:"none",border:"none",color:"#fb7185",cursor:"pointer"}}>✕</button></div>)}</div></Shell>;
+}
+
+function Shell({title,color,onSave,onCancel,disabled,children}){
+  return<div style={{background:"#080810",border:`1px solid ${color}22`,padding:20,borderRadius:2}}><div style={{fontSize:13,letterSpacing:4,color,marginBottom:18,fontFamily:"'Rajdhani',sans-serif",fontWeight:700}}>{title}</div><div style={{display:"flex",flexDirection:"column",gap:12}}>{children}</div><div style={{display:"flex",gap:8,marginTop:16}}><button onClick={onSave} disabled={disabled} style={{flex:2,background:color,border:"none",color:"#fff",padding:"10px",fontSize:12,letterSpacing:3,cursor:"pointer",fontFamily:"'Share Tech Mono',monospace",opacity:disabled?0.4:1}}>✓ SAVE</button><button onClick={onCancel} style={{flex:1,background:"#1a1a2e",border:"none",color:"#666",padding:"10px",fontSize:12,letterSpacing:3,cursor:"pointer",fontFamily:"'Share Tech Mono',monospace"}}>CANCEL</button></div></div>;
+}
+function TwoCol({children}){return<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>{children}</div>;}
+function Lbl({children}){return<div style={{fontSize:9,letterSpacing:3,color:"#555",marginBottom:4,textTransform:"uppercase",fontFamily:"'Share Tech Mono',monospace"}}>{children}</div>;}
+function SecHead({label,action,onAction}){return<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}><div style={{fontSize:10,letterSpacing:4,color:"#6366f155",fontFamily:"'Share Tech Mono',monospace"}}>{label}</div>{action&&<button onClick={onAction} style={{fontSize:11,letterSpacing:2,color:"#6366f1",background:"none",border:"none",cursor:"pointer",fontFamily:"'Barlow',sans-serif",fontWeight:600}}>{action} ›</button>}</div>;}
+function FBtn({label,active,color,onClick}){return<button onClick={onClick} style={{fontSize:10,letterSpacing:2,padding:"5px 12px",border:`1px solid ${active?color:"#1a1a2e"}`,background:active?color+"22":"none",color:active?color:"#444",cursor:"pointer",whiteSpace:"nowrap",fontFamily:"'Share Tech Mono',monospace",flexShrink:0}}>{label}</button>;}
+function FatBtn({children,color,onClick}){return<button onClick={onClick} style={{fontSize:11,letterSpacing:2,color:"#fff",background:color,border:"none",padding:"8px 16px",cursor:"pointer",fontFamily:"'Share Tech Mono',monospace",whiteSpace:"nowrap"}}>{children}</button>;}
+function Empty({text}){return<div style={{fontSize:12,color:"#222",textAlign:"center",padding:"40px 0",letterSpacing:3,fontFamily:"'Share Tech Mono',monospace"}}>{text}</div>;}
+function bs(bg,color,extra=""){const s={background:bg,border:`1px solid ${color}33`,color,padding:"8px 13px",fontSize:11,letterSpacing:2,cursor:"pointer",fontFamily:"'Share Tech Mono',monospace"};if(extra.includes("flex:2"))s.flex=2;if(extra.includes("flex:1"))s.flex=1;return s;}
+
+function DataPanel({quests,arsenal,missions,recurring,bountyBank,totalXPBank,rankThresholds,settings,onImport,onSaveRankThresholds,onSaveSettings,onChangePin}){
+  const [open,setOpen]=useState(false);
+  const [sec,setSec]=useState("data");
+  const [importText,setImportText]=useState("");
+  const [importError,setImportError]=useState("");
+  const [importMode,setImportMode]=useState("merge");
+  const [editT,setEditT]=useState((rankThresholds||RANK_THRESHOLDS).slice(0,-1));
+  const [editS,setEditS]=useState(settings||DEFAULT_SETTINGS);
+
+  function doExport(){
+    const data=JSON.stringify({quests,arsenal,missions,recurring,bountyBank,totalXPBank},null,2);
+    const blob=new Blob([data],{type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;a.download=`solo-operator-v5-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();URL.revokeObjectURL(url);
+  }
+
+  function doImport(){
+    try{
+      const d=JSON.parse(importText);
+      if(!d.quests&&!d.missions&&!d.arsenal)throw new Error("Invalid");
+      if(importMode==="restore"){
+        onImport(d);
+      }else{
+        const merged={};
+        if(d.quests){
+          const sMap={};d.quests.forEach(q=>{sMap[q.id]=q;});
+          const lMap={};quests.forEach(q=>{lMap[q.id]=q;});
+          const mq=d.quests.map(q=>{const lv=lMap[q.id];return lv?{...q,completed:lv.completed}:q;});
+          quests.forEach(q=>{if(!sMap[q.id])mq.push(q);});
+          merged.quests=mq;
+        }
+        if(d.arsenal){
+          const aMap={};d.arsenal.forEach(w=>{aMap[w.id]=w;});
+          const lMap={};arsenal.forEach(w=>{lMap[w.id]=w;});
+          const ma=d.arsenal.map(w=>{const lv=lMap[w.id];return lv?{...w,owned:lv.owned}:w;});
+          arsenal.forEach(w=>{if(!aMap[w.id])ma.push(w);});
+          merged.arsenal=ma;
+        }
+        if(d.missions)merged.missions=d.missions;
+        if(d.recurring){
+          const rMap={};d.recurring.forEach(r=>{rMap[r.id]=r;});
+          const lMap={};recurring.forEach(r=>{lMap[r.id]=r;});
+          merged.recurring=d.recurring.map(r=>{const lv=lMap[r.id];return lv?{...r,totalCompletions:lv.totalCompletions}:r;});
+        }
+        merged.bountyBank=bountyBank;
+        merged.totalXPBank=totalXPBank;
+        onImport(merged);
+      }
+      setImportText("");setImportError("");setOpen(false);
+    }catch(e){setImportError("Invalid data. Paste a valid export.");}
+  }
+
+  function saveRanks(){
+    const t=[...editT.map(v=>Number(v)),999999999];
+    onSaveRankThresholds(t);setOpen(false);
+  }
+
+  function resetRanks(){setEditT(RANK_THRESHOLDS.slice(0,-1));onSaveRankThresholds(RANK_THRESHOLDS.slice());}
+
+  function clearPin(){
+    if(window.confirm("Remove PIN? App will ask you to create a new one on next open.")){localStorage.removeItem(PIN_KEY);onChangePin();}
+  }
+
+  const tabStyle=(id)=>({flex:1,padding:"9px 4px",background:sec===id?"#0d0d1a":"none",border:"none",borderBottom:`2px solid ${sec===id?"#6366f1":"transparent"}`,color:sec===id?"#6366f1":"#444",fontSize:9,letterSpacing:2,cursor:"pointer",fontFamily:"'Share Tech Mono',monospace"});
+
+  return(
+    <div style={{position:"fixed",bottom:66,right:0,zIndex:60}}>
+      <button onClick={()=>setOpen(!open)} style={{background:"#0d0d1a",border:"1px solid #1a1a2e",borderRight:"none",color:settings&&settings.accentColor?settings.accentColor:"#6366f1",padding:"8px 12px",fontSize:10,letterSpacing:2,cursor:"pointer",fontFamily:"'Share Tech Mono',monospace",borderRadius:"4px 0 0 4px"}}>{open?"✕":"⚙ SYS"}</button>
+      {open&&(
+        <div style={{position:"absolute",bottom:36,right:0,width:310,background:"#0a0a14",border:"1px solid #1a1a2e",borderRadius:"4px 0 0 4px",overflow:"hidden"}}>
+          <div style={{display:"flex",borderBottom:"1px solid #1a1a2e"}}>
+            {["data","ranks","settings","security"].map(t=><button key={t} onClick={()=>setSec(t)} style={tabStyle(t)}>{t.toUpperCase()}</button>)}
+          </div>
+          <div style={{padding:16}}>
+
+            {sec==="data"&&<>
+              <button onClick={doExport} style={{...bs("#6366f133","#6366f1",""),width:"100%",textAlign:"center",marginBottom:12}}>⬇ EXPORT SAVE</button>
+              <div style={{borderTop:"1px solid #1a1a2e",paddingTop:12}}>
+                <Lbl>IMPORT MODE</Lbl>
+                <div style={{display:"flex",gap:6,marginBottom:10}}>
+                  {[{v:"merge",label:"MERGE",desc:"Keep XP & progress"},{v:"restore",label:"RESTORE",desc:"Full overwrite"}].map(m=>(
+                    <div key={m.v} onClick={()=>setImportMode(m.v)} style={{flex:1,padding:"8px 10px",background:importMode===m.v?"#6366f122":"#0d0d1a",border:`1px solid ${importMode===m.v?"#6366f1":"#1a1a2e"}`,cursor:"pointer"}}>
+                      <div style={{fontSize:10,color:importMode===m.v?"#6366f1":"#555",fontFamily:"'Share Tech Mono',monospace",letterSpacing:2}}>{m.label}</div>
+                      <div style={{fontSize:9,color:"#444",marginTop:2,fontFamily:"'Barlow',sans-serif"}}>{m.desc}</div>
+                    </div>
+                  ))}
+                </div>
+                <textarea value={importText} onChange={e=>{setImportText(e.target.value);setImportError("");}} rows={4} placeholder="Paste exported JSON here..." style={{marginBottom:6,fontSize:11,resize:"vertical"}}/>
+                {importError&&<div style={{fontSize:10,color:"#fb7185",marginBottom:6,fontFamily:"'Share Tech Mono',monospace"}}>{importError}</div>}
+                <button onClick={doImport} disabled={!importText} style={{...bs(importMode==="restore"?"#1a0a0a":"#061406",importMode==="restore"?"#fb7185":"#4ade80",""),width:"100%",textAlign:"center",opacity:importText?1:0.4}}>
+                  {importMode==="restore"?"⬆ RESTORE (OVERWRITES)":"⬆ MERGE IMPORT"}
+                </button>
+              </div>
+            </>}
+
+            {sec==="ranks"&&<>
+              <div style={{fontSize:10,color:"#555",marginBottom:12,fontFamily:"'Barlow',sans-serif",lineHeight:1.6}}>Set the XP required to reach each rank. SSS is always unreachable.</div>
+              <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12}}>
+                {RANKS.slice(0,-1).map((r,i)=>(
+                  <div key={r} style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",border:`1px solid ${RANK_COLORS[r]}44`,color:RANK_COLORS[r],fontSize:11,fontWeight:700,fontFamily:"'Rajdhani',sans-serif",flexShrink:0}}>{r}</div>
+                    <div style={{flex:1,fontSize:9,color:"#444",fontFamily:"'Share Tech Mono',monospace"}}>{RANK_TITLES[r].split("·")[0].trim()}</div>
+                    <input type="number" value={editT[i]} onChange={e=>{const t=[...editT];t[i]=e.target.value;setEditT(t);}} style={{width:70,textAlign:"right",fontSize:11,padding:"5px 8px"}}/>
+                  </div>
+                ))}
+                <div style={{display:"flex",alignItems:"center",gap:10,opacity:0.3}}>
+                  <div style={{width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",border:"1px solid #ffffff22",color:"#fff",fontSize:11,fontWeight:700,fontFamily:"'Rajdhani',sans-serif",flexShrink:0}}>SSS</div>
+                  <div style={{flex:1,fontSize:9,color:"#444",fontFamily:"'Share Tech Mono',monospace"}}>∞ BEYOND REACH</div>
+                  <div style={{width:70,textAlign:"right",fontSize:11,color:"#333",padding:"5px 8px"}}>∞</div>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:6}}>
+                <button onClick={saveRanks} style={{...bs("#6366f133","#6366f1",""),flex:2,textAlign:"center"}}>✓ SAVE RANKS</button>
+                <button onClick={resetRanks} style={{...bs("#1a1a2e","#666",""),textAlign:"center"}}>↺ RESET</button>
+              </div>
+            </>}
+
+            {sec==="settings"&&<div style={{display:"flex",flexDirection:"column",gap:14}}><div><Lbl>FONT SIZE — {editS.fontSize}px</Lbl><input type="range" min={11} max={18} value={editS.fontSize} onChange={e=>setEditS(s=>({...s,fontSize:+e.target.value}))} style={{width:"100%",padding:0,height:20}}/><div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:"#444",marginTop:3}}><span>11px</span><span style={{color:editS.accentColor,fontWeight:700}}>{editS.fontSize}px</span><span>18px</span></div></div><div><Lbl>ACCENT COLOR</Lbl><div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:4}}>{["#6366f1","#38bdf8","#a78bfa","#4ade80","#f97316","#fb7185","#facc15","#2dd4bf","#fff"].map(function(c){return <div key={c} onClick={()=>setEditS(s=>({...s,accentColor:c}))} style={{width:28,height:28,background:c,cursor:"pointer",outline:editS.accentColor===c?"2px solid #fff":"none",borderRadius:2}}/>;})}</div><input value={editS.accentColor} onChange={e=>setEditS(s=>({...s,accentColor:e.target.value}))} placeholder="#6366f1" style={{marginTop:8,fontSize:11}}/></div><div><Lbl>HIGHLIGHT COLOR</Lbl><div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:4}}>{["#facc15","#4ade80","#fb7185","#38bdf8","#a78bfa","#f97316","#2dd4bf","#6366f1","#fff"].map(function(c){return <div key={c} onClick={()=>setEditS(s=>({...s,highlightColor:c}))} style={{width:28,height:28,background:c,cursor:"pointer",outline:editS.highlightColor===c?"2px solid #fff":"none",borderRadius:2}}/>;})}</div><input value={editS.highlightColor} onChange={e=>setEditS(s=>({...s,highlightColor:e.target.value}))} placeholder="#facc15" style={{marginTop:8,fontSize:11}}/></div><div onClick={()=>setEditS(s=>({...s,mobile:!s.mobile}))} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"#0d0d1a",border:"1px solid #1a1a2e",cursor:"pointer"}}><div style={{width:36,height:20,background:editS.mobile?"#333":"#4ade80",borderRadius:10,position:"relative",flexShrink:0,transition:"background 0.2s"}}><div style={{width:16,height:16,background:"#fff",borderRadius:"50%",position:"absolute",top:2,left:editS.mobile?2:18,transition:"left 0.2s"}}/></div><div><div style={{fontSize:11,color:editS.mobile?"#888":"#4ade80",fontFamily:"'Share Tech Mono',monospace",letterSpacing:2}}>{editS.mobile?"MOBILE MODE":"DESKTOP MODE"}</div><div style={{fontSize:9,color:"#444",marginTop:1,fontFamily:"'Barlow',sans-serif"}}>{editS.mobile?"Compact layout":"Wide layout"}</div></div></div><button onClick={()=>onSaveSettings(editS)} style={{...bs("#6366f133","#6366f1",""),width:"100%",textAlign:"center"}}>APPLY SETTINGS</button><button onClick={()=>{const d=DEFAULT_SETTINGS;setEditS(d);onSaveSettings(d);}} style={{...bs("#1a1a2e","#666",""),width:"100%",textAlign:"center"}}>RESET DEFAULTS</button></div>}
+            {sec==="security"&&<>
+              <div style={{fontSize:11,color:"#888",marginBottom:12,fontFamily:"'Barlow',sans-serif",lineHeight:1.6}}>Reset PIN. The app will prompt you to create a new one on next open.</div>
+              <button onClick={clearPin} style={{...bs("#1a0a0a","#fb7185",""),width:"100%",textAlign:"center"}}>🔓 RESET PIN</button>
+            </>}
+
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
