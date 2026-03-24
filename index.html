@@ -2,38 +2,1117 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Solo Operator v6 — LLL Services</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&family=Barlow:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Solo Operator</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Barlow:wght@300;400;500;600&family=Press+Start+2P&family=Cinzel:wght@400;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-body{background:#050508;font-family:'Barlow',sans-serif;color:#e5e5e5;overflow-x:hidden;}
-.mono{font-family:'Share Tech Mono',monospace;}
-.heading{font-family:'Rajdhani',sans-serif;}
-input,select,textarea{background:#0a0a14;border:1px solid #1a1a2e;color:#e5e5e5;padding:9px 13px;font-family:'Barlow',sans-serif;font-size:14px;border-radius:2px;width:100%;box-sizing:border-box;outline:none;}
-input:focus,select:focus,textarea:focus{border-color:#6366f1;}
-select option{background:#0a0a14;}
-::-webkit-scrollbar{width:3px;}
-::-webkit-scrollbar-track{background:#050508;}
-::-webkit-scrollbar-thumb{background:#1a1a2e;}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
-@keyframes glow{0%,100%{box-shadow:0 0 8px rgba(99,102,241,0.4)}50%{box-shadow:0 0 24px rgba(99,102,241,0.9)}}
-@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-@keyframes flashIn{0%{opacity:0;transform:translateY(-16px) translateX(-50%)}15%{opacity:1;transform:translateY(0) translateX(-50%)}80%{opacity:1}100%{opacity:0;transform:translateY(-10px) translateX(-50%)}}
-@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
-@keyframes sssGlow{0%,100%{box-shadow:0 0 12px rgba(255,255,255,0.1),0 0 24px rgba(255,255,255,0.05)}50%{box-shadow:0 0 30px rgba(255,255,255,0.3),0 0 60px rgba(255,255,255,0.15)}}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#050508;color:#e5e5e5;font-family:'Barlow',sans-serif;overflow-x:hidden;}
+input,select,textarea,button{font-family:inherit;color:inherit;background:transparent;outline:none;}
+input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:#1a1a2e;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--ac,#6366f1);cursor:pointer;}
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:#1a1a2e;border-radius:2px;}
+textarea{resize:vertical;}
+.theme-zelda{--bg:#0a0e06;--bg2:#111a0a;--ac:#4ade80;--hc:#fbbf24;--border:#1a2e1a;--text:#d4edaa;--font-display:'Cinzel',serif;--font-mono:'Share Tech Mono',monospace;}
+.theme-mario{--bg:#0a0a1a;--bg2:#0d0d22;--ac:#ef4444;--hc:#fbbf24;--border:#2a1a1a;--text:#fde68a;--font-display:'Press Start 2P',monospace;--font-mono:'Press Start 2P',monospace;}
+.theme-solo-leveling{--bg:#030309;--bg2:#07070f;--ac:#7c3aed;--hc:#a78bfa;--border:#1a0a2e;--text:#e9d5ff;--font-display:'Orbitron',sans-serif;--font-mono:'Share Tech Mono',monospace;}
+.theme-operator{--bg:#050508;--bg2:#0d0d18;--ac:#6366f1;--hc:#facc15;--border:#1a1a2e;--text:#e5e5e5;--font-display:'Rajdhani',sans-serif;--font-mono:'Share Tech Mono',monospace;}
+.theme-rose{--bg:#0d0608;--bg2:#180a0e;--ac:#f472b6;--hc:#fb923c;--border:#2e0a1a;--text:#fce7f3;--font-display:'Cinzel',serif;--font-mono:'Share Tech Mono',monospace;}
+.theme-minimal{--bg:#f8f8f8;--bg2:#ffffff;--ac:#18181b;--hc:#6366f1;--border:#e4e4e7;--text:#18181b;--font-display:'Rajdhani',sans-serif;--font-mono:'Share Tech Mono',monospace;}
+@media(min-width:768px){body.desktop-mode{font-size:165%;}}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const {useState,useEffect,useCallback,useRef} = React;
+const {useState,useEffect,useCallback,useRef}=React;
 
+const STORAGE_KEY="solo-operator-v7";
+const CHAR_KEY="solo-operator-char";
+const SETTINGS_KEY="solo-operator-settings";
+const RANK_KEY="solo-operator-ranks";
+const PIN_KEY="solo-operator-pin";
+const PREV_KEYS=["solo-operator-v5","solo-operator-v4","solo-operator-v3","solo-operator-v2"];
+
+const RANKS=["F","E","D","C","B","A","S","SS","SSS"];
+const RANK_COLORS={F:"#444",E:"#888",D:"#4ade80",C:"#38bdf8",B:"#a78bfa",A:"#f97316",S:"#facc15",SS:"#fb7185",SSS:"#ffffff"};
+const RANK_TITLES={F:"Jobless · Homeless",E:"Unemployed · Free Time",D:"Working · Building",C:"Business Moves · Provider",B:"Financially Free · Set for Life",A:"Community Impact · Builder",S:"City-Level Force · Operator",SS:"National Reach · Legacy",SSS:"∞ · Beyond Reach"};
+const RANK_THRESHOLDS=[0,1,10,100,1000,10000,100000,1000000,1e15];
+const RANK_SP_BONUS={F:0,E:2,D:5,C:10,B:20,A:40,S:80,SS:150};
+
+function parseXP(v){if(typeof v==="number")return v;const s=String(v).trim().toLowerCase().replace(/,/g,"");if(s==="")return 0;const m={t:1e12,b:1e9,m:1e6,k:1e3};for(const[sfx,mul]of Object.entries(m)){if(s.endsWith(sfx)){const n=parseFloat(s);return isNaN(n)?0:Math.round(n*mul);}}return parseInt(s)||0;}
+function formatXP(n){n=Number(n);if(n>=1e12)return(n/1e12).toFixed(n%1e12===0?0:1)+"t";if(n>=1e9)return(n/1e9).toFixed(n%1e9===0?0:1)+"b";if(n>=1e6)return(n/1e6).toFixed(n%1e6===0?0:1)+"m";if(n>=1e3)return(n/1e3).toFixed(n%1e3===0?0:1)+"k";return String(n);}
+function getRank(xp,t){t=t||RANK_THRESHOLDS;for(let i=t.length-1;i>=0;i--)if(xp>=t[i])return RANKS[i];return"F";}
+function getNextXP(xp,t){t=t||RANK_THRESHOLDS;for(let i=0;i<t.length;i++)if(xp<t[i])return t[i];return t[t.length-2];}
+function hashPin(p){let h=0;for(let i=0;i<p.length;i++){h=((h<<5)-h)+p.charCodeAt(i);h|=0;}return String(h);}
+function applyTheme(id){const t=document.body;["operator","solo-leveling","zelda","mario","rose","minimal"].forEach(x=>t.classList.remove("theme-"+x));t.classList.add("theme-"+(id||"operator"));}
+
+const ATTRS=[
+  {id:"force",dnd:"STR",label:"FORCE",desc:"Physical output, labor, endurance",color:"#ef4444",questTypes:["FIELD","MAINTENANCE","EQUIPMENT"]},
+  {id:"precision",dnd:"DEX",label:"PRECISION",desc:"Execution speed, quality, attention to detail",color:"#f97316",questTypes:["FIELD","INFRASTRUCTURE","EQUIPMENT"]},
+  {id:"resilience",dnd:"CON",label:"RESILIENCE",desc:"Mental toughness, recovery, consistency",color:"#4ade80",questTypes:["PERSONAL","OPERATIONS","MAINTENANCE"]},
+  {id:"intellect",dnd:"INT",label:"INTELLECT",desc:"Systems thinking, strategy, problem solving",color:"#38bdf8",questTypes:["INFRASTRUCTURE","SYSTEMS","VISION"]},
+  {id:"judgment",dnd:"WIS",label:"JUDGMENT",desc:"Decision making, reading people, intuition",color:"#a78bfa",questTypes:["VISION","OPERATIONS","COLLECTIONS"]},
+  {id:"influence",dnd:"CHA",label:"INFLUENCE",desc:"Sales, negotiation, networking, leadership",color:"#facc15",questTypes:["NEGOTIATION","COLLECTIONS","PERSONAL"]},
+];
+
+const SYNERGIES=[
+  {attrs:["force","precision"],name:"FIELD MASTERY",desc:"Field quests +25% XP",color:"#f97316"},
+  {attrs:["intellect","judgment"],name:"OPERATOR IQ",desc:"Infrastructure quests +25% XP",color:"#38bdf8"},
+  {attrs:["influence","judgment"],name:"CLOSER",desc:"Negotiation quests +25% XP",color:"#facc15"},
+  {attrs:["resilience","force"],name:"IRONCLAD",desc:"Daily quests never break streak",color:"#4ade80"},
+  {attrs:["intellect","influence"],name:"ARCHITECT",desc:"Vision quests +25% XP",color:"#a78bfa"},
+  {attrs:["force","precision","resilience","intellect","judgment","influence"],name:"SOLO OPERATOR",desc:"All stats 10+ — legendary 50% bonus",color:"#ffffff"},
+];
+
+const ARCHETYPES=[
+  {id:"operator",label:"OPERATOR",icon:"⚙️",bonus:["force","precision"],desc:"Built for the field. Executes without hesitation.",startStats:{force:3,precision:3,resilience:2,intellect:1,judgment:1,influence:1}},
+  {id:"entrepreneur",label:"ENTREPRENEUR",icon:"💰",bonus:["influence","judgment"],desc:"Sees the deal before it exists. Moves fast. Builds leverage.",startStats:{force:1,precision:1,resilience:1,intellect:2,judgment:3,influence:3}},
+  {id:"builder",label:"BUILDER",icon:"🏗️",bonus:["intellect","precision"],desc:"Designs the systems others operate.",startStats:{force:1,precision:3,resilience:1,intellect:3,judgment:2,influence:1}},
+  {id:"creator",label:"CREATOR",icon:"✨",bonus:["influence","intellect"],desc:"Turns ideas into movements.",startStats:{force:1,precision:1,resilience:2,intellect:3,judgment:1,influence:3}},
+];
+
+const THEMES=[
+  {id:"operator",label:"OPERATOR",preview:{bg:"#050508",ac:"#6366f1",hc:"#facc15"},desc:"Dark military HUD"},
+  {id:"solo-leveling",label:"SOLO LEVELING",preview:{bg:"#030309",ac:"#7c3aed",hc:"#a78bfa"},desc:"Anime system UI"},
+  {id:"zelda",label:"ZELDA",preview:{bg:"#0a0e06",ac:"#4ade80",hc:"#fbbf24"},desc:"Fantasy quest log"},
+  {id:"mario",label:"MARIO",preview:{bg:"#0a0a1a",ac:"#ef4444",hc:"#fbbf24"},desc:"Pixel arcade energy"},
+  {id:"rose",label:"ROSE",preview:{bg:"#0d0608",ac:"#f472b6",hc:"#fb923c"},desc:"Dark feminine power"},
+  {id:"minimal",label:"MINIMAL",preview:{bg:"#f8f8f8",ac:"#18181b",hc:"#6366f1"},desc:"Clean & focused"},
+];
+
+const QUEST_TYPES=["FIELD","NEGOTIATION","OPERATIONS","COLLECTIONS","INFRASTRUCTURE","EQUIPMENT","MAINTENANCE","SYSTEMS","VISION","PERSONAL"];
+const TYPE_COLORS={FIELD:"#4ade80",NEGOTIATION:"#facc15",OPERATIONS:"#38bdf8",COLLECTIONS:"#c084fc",INFRASTRUCTURE:"#2dd4bf",EQUIPMENT:"#f97316",MAINTENANCE:"#94a3b8",SYSTEMS:"#818cf8",VISION:"#fb7185",PERSONAL:"#e879f9"};
+const WEAPON_CATEGORIES=["TOOL","VEHICLE","GEAR","SOFTWARE","CONSUMABLE","KNOWLEDGE"];
+const DEFAULT_SETTINGS={fontSize:14,cardSize:100,headerSize:100,accentColor:"#6366f1",highlightColor:"#facc15",mobile:true,theme:"operator"};
+
+// ─────────────────────────────────────────────
+// ONBOARDING
+// ─────────────────────────────────────────────
+function Ob_Title({children}){return <div style={{fontFamily:"var(--font-display)",fontSize:24,fontWeight:700,color:"var(--text)",letterSpacing:2,marginBottom:8,lineHeight:1.1}}>{children}</div>;}
+function Ob_Sub({children}){return <div style={{fontSize:12,color:"#555",marginBottom:20,lineHeight:1.6}}>{children}</div>;}
+function Ob_Label({children}){return <div style={{fontFamily:"var(--font-mono)",fontSize:8,letterSpacing:3,color:"#444",marginBottom:6}}>{children}</div>;}
+function Ob_Btn({children,onClick,disabled}){return <button onClick={onClick} disabled={disabled} style={{width:"100%",padding:"14px",background:disabled?"#111":"var(--ac)22",border:"1px solid "+(disabled?"#222":"var(--ac)"),color:disabled?"#333":"var(--ac)",fontFamily:"var(--font-display)",fontSize:14,fontWeight:700,letterSpacing:3,cursor:disabled?"default":"pointer"}}>{children}</button>;}
+function obInput(){return{width:"100%",background:"var(--bg2)",border:"1px solid #1a1a2e",color:"var(--text)",padding:"10px 12px",fontSize:13};}
+
+function Onboarding({onComplete}){
+  const [step,setStep]=useState(0);
+  const [theme,setTheme]=useState("operator");
+  const [name,setName]=useState("");
+  const [title,setTitle]=useState("");
+  const [archetype,setArchetype]=useState("");
+  const [mission,setMission]=useState("");
+  const [attrs,setAttrs]=useState({force:1,precision:1,resilience:1,intellect:1,judgment:1,influence:1});
+  const [freePoints,setFreePoints]=useState(10);
+
+  useEffect(()=>applyTheme(theme),[theme]);
+
+  const archetypeData=ARCHETYPES.find(a=>a.id===archetype);
+  const totalAllocated=Object.values(attrs).reduce((a,b)=>a+b,0)-6;
+  const pointsLeft=freePoints-totalAllocated;
+
+  function setAttr(id,val){
+    const cur=attrs[id];const diff=val-cur;
+    if(diff>0&&pointsLeft<=0)return;
+    if(val<1||val>10)return;
+    setAttrs(a=>({...a,[id]:val}));
+  }
+
+  function pickArchetype(id){
+    const a=ARCHETYPES.find(x=>x.id===id);
+    setArchetype(id);
+    setAttrs({...a.startStats});
+    setFreePoints(4);
+  }
+
+  function finish(){
+    const char={name,title,archetype,mission,theme,attrs,skillPoints:10,totalSPEarned:10};
+    onComplete(char,theme);
+  }
+
+  const STEP_THEME=(
+    <div>
+      <Ob_Title>CHOOSE YOUR INTERFACE</Ob_Title>
+      <Ob_Sub>Pick a theme. You can change this anytime in settings.</Ob_Sub>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:24}}>
+        {THEMES.map(t=>(
+          <div key={t.id} onClick={()=>setTheme(t.id)}
+            style={{background:t.preview.bg,border:"2px solid "+(theme===t.id?t.preview.ac:"#111"),padding:"12px 14px",cursor:"pointer"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+              <span style={{fontFamily:"var(--font-display)",fontSize:10,fontWeight:700,color:t.preview.ac,letterSpacing:2}}>{t.label}</span>
+              {theme===t.id&&<span style={{fontSize:8,color:t.preview.ac}}>✓</span>}
+            </div>
+            <div style={{height:3,background:"linear-gradient(90deg,"+t.preview.ac+","+t.preview.hc+")",marginBottom:6}}/>
+            <div style={{fontSize:9,color:"#555",fontFamily:"var(--font-mono)"}}>{t.desc}</div>
+          </div>
+        ))}
+      </div>
+      <Ob_Btn onClick={()=>setStep(1)}>CONFIRM THEME →</Ob_Btn>
+    </div>
+  );
+
+  const STEP_IDENTITY=(
+    <div>
+      <Ob_Title>WHO ARE YOU?</Ob_Title>
+      <Ob_Sub>Name your operator. Give yourself a title worth earning.</Ob_Sub>
+      <div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:24}}>
+        <div><Ob_Label>OPERATOR NAME</Ob_Label><input value={name} onChange={e=>setName(e.target.value)} placeholder="Your name..." style={obInput()}/></div>
+        <div><Ob_Label>TITLE</Ob_Label><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="e.g. Lawn Commander, The Closer, Solo Builder..." style={obInput()}/></div>
+      </div>
+      <Ob_Btn disabled={!name.trim()||!title.trim()} onClick={()=>setStep(2)}>LOCK IN →</Ob_Btn>
+    </div>
+  );
+
+  const STEP_ARCHETYPE=(
+    <div>
+      <Ob_Title>CHOOSE YOUR CLASS</Ob_Title>
+      <Ob_Sub>Your archetype sets starting stat distribution.</Ob_Sub>
+      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:24}}>
+        {ARCHETYPES.map(a=>(
+          <div key={a.id} onClick={()=>pickArchetype(a.id)}
+            style={{background:archetype===a.id?"var(--bg2)":"transparent",border:"1px solid "+(archetype===a.id?"var(--ac)":"#1a1a2e"),padding:"14px 16px",cursor:"pointer",display:"flex",gap:14,alignItems:"flex-start"}}>
+            <span style={{fontSize:24,flexShrink:0}}>{a.icon}</span>
+            <div style={{flex:1}}>
+              <div style={{fontFamily:"var(--font-display)",fontSize:14,fontWeight:700,color:"var(--ac)",letterSpacing:2,marginBottom:4}}>{a.label}</div>
+              <div style={{fontSize:11,color:"#555",lineHeight:1.5,marginBottom:8}}>{a.desc}</div>
+              <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                {a.bonus.map(b=>{const at=ATTRS.find(x=>x.id===b);return at?<span key={b} style={{fontSize:8,padding:"2px 6px",background:at.color+"22",border:"1px solid "+at.color+"44",color:at.color,fontFamily:"var(--font-mono)",letterSpacing:1}}>{at.label} BONUS</span>:null;})}
+              </div>
+            </div>
+            {archetype===a.id&&<span style={{color:"var(--ac)",fontSize:16}}>✓</span>}
+          </div>
+        ))}
+      </div>
+      <Ob_Btn disabled={!archetype} onClick={()=>setStep(3)}>CONFIRM CLASS →</Ob_Btn>
+    </div>
+  );
+
+  const STEP_ATTRS=(
+    <div>
+      <Ob_Title>ALLOCATE ATTRIBUTES</Ob_Title>
+      <Ob_Sub>Archetype stats pre-loaded. Spend <span style={{color:"var(--ac)",fontWeight:700}}>{Math.max(0,pointsLeft)} free points</span>. Min 1, max 10.</Ob_Sub>
+      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:24}}>
+        {ATTRS.map(at=>{
+          const val=attrs[at.id]||1;
+          const isBonus=archetypeData&&archetypeData.bonus.includes(at.id);
+          return(
+            <div key={at.id} style={{background:"var(--bg2)",border:"1px solid "+(isBonus?at.color+"44":"#111"),padding:"10px 14px",display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:70,flexShrink:0}}>
+                <div style={{fontFamily:"var(--font-mono)",fontSize:8,color:at.color,letterSpacing:2}}>{at.dnd}</div>
+                <div style={{fontFamily:"var(--font-display)",fontSize:13,fontWeight:700,color:"var(--text)",letterSpacing:1}}>{at.label}</div>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{height:4,background:"#111",borderRadius:2,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:(val/10*100)+"%",background:at.color,transition:"width 0.2s"}}/>
+                </div>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                <button onClick={()=>setAttr(at.id,val-1)} style={{width:24,height:24,background:"#111",border:"1px solid #222",color:"#888",cursor:"pointer",fontSize:16,lineHeight:1}}>−</button>
+                <span style={{fontFamily:"var(--font-mono)",fontSize:14,color:at.color,width:20,textAlign:"center"}}>{val}</span>
+                <button onClick={()=>setAttr(at.id,val+1)} disabled={pointsLeft<=0} style={{width:24,height:24,background:pointsLeft>0?at.color+"22":"#111",border:"1px solid "+(pointsLeft>0?at.color:"#222"),color:pointsLeft>0?at.color:"#444",cursor:pointsLeft>0?"pointer":"default",fontSize:16,lineHeight:1}}>+</button>
+              </div>
+              {isBonus&&<span style={{fontSize:10,color:at.color}}>★</span>}
+            </div>
+          );
+        })}
+      </div>
+      <Ob_Btn onClick={()=>setStep(4)}>LOCK STATS →</Ob_Btn>
+    </div>
+  );
+
+  const STEP_MISSION=(
+    <div>
+      <Ob_Title>DEFINE YOUR MISSION</Ob_Title>
+      <Ob_Sub>One sentence. Your primary objective. What does winning look like in 90 days?</Ob_Sub>
+      <div style={{marginBottom:24}}>
+        <textarea value={mission} onChange={e=>setMission(e.target.value)} placeholder="e.g. Hit $125k gross revenue and close Cannon Hill by November 2026..." rows={4} style={{...obInput(),resize:"vertical",lineHeight:1.6}}/>
+      </div>
+      <Ob_Btn disabled={!mission.trim()} onClick={finish}>ENTER THE SYSTEM →</Ob_Btn>
+    </div>
+  );
+
+  const steps=[STEP_THEME,STEP_IDENTITY,STEP_ARCHETYPE,STEP_ATTRS,STEP_MISSION];
+  const pct=(step/steps.length)*100;
+
+  return(
+    <div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{width:"100%",maxWidth:480}}>
+        <div style={{height:2,background:"#111",marginBottom:32,borderRadius:1}}>
+          <div style={{height:"100%",width:pct+"%",background:"var(--ac)",transition:"width 0.4s"}}/>
+        </div>
+        <div style={{fontFamily:"var(--font-mono)",fontSize:8,color:"#333",letterSpacing:3,marginBottom:20}}>STEP {step+1} OF {steps.length}</div>
+        {steps[step]}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// SKILL PANEL
+// ─────────────────────────────────────────────
+function SkillPanel({char,onSave,onClose}){
+  const [attrs,setAttrs]=useState({...char.attrs});
+  const [pts,setPts]=useState(char.skillPoints||0);
+
+  function spend(id){if(pts<=0||attrs[id]>=99)return;setAttrs(a=>({...a,[id]:a[id]+1}));setPts(p=>p-1);}
+  function refund(id){const base=ARCHETYPES.find(a=>a.id===char.archetype)?.startStats[id]||1;if(attrs[id]<=base)return;setAttrs(a=>({...a,[id]:a[id]-1}));setPts(p=>p+1);}
+
+  const activeSynergies=SYNERGIES.filter(s=>{
+    if(s.attrs.length===6)return Object.values(attrs).every(v=>v>=10);
+    return s.attrs.every(id=>attrs[id]>=5);
+  });
+
+  return(
+    <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div style={{background:"var(--bg2)",border:"1px solid var(--ac)44",width:"100%",maxWidth:420,maxHeight:"90vh",overflowY:"auto",padding:20}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div style={{fontFamily:"var(--font-display)",fontSize:18,fontWeight:700,color:"var(--text)",letterSpacing:2}}>SKILL POINTS</div>
+          <div style={{fontFamily:"var(--font-mono)",fontSize:22,color:"var(--ac)",fontWeight:700}}>{pts} <span style={{fontSize:10,color:"#555"}}>AVAILABLE</span></div>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:16}}>
+          {ATTRS.map(at=>{
+            const val=attrs[at.id]||1;
+            const base=ARCHETYPES.find(a=>a.id===char.archetype)?.startStats[at.id]||1;
+            const gained=val-base;
+            return(
+              <div key={at.id} style={{background:"var(--bg)",border:"1px solid "+at.color+"22",padding:"10px 12px",display:"flex",alignItems:"center",gap:10}}>
+                <div style={{width:90,flexShrink:0}}>
+                  <div style={{fontSize:7,color:at.color,fontFamily:"var(--font-mono)",letterSpacing:1}}>{at.dnd} · {at.label}</div>
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{height:3,background:"#111",borderRadius:1}}>
+                    <div style={{height:"100%",width:(val/20*100)+"%",background:at.color,transition:"width 0.15s"}}/>
+                  </div>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+                  <button onClick={()=>refund(at.id)} disabled={val<=base} style={{width:20,height:20,background:"#111",border:"1px solid #222",color:val>base?"#888":"#333",cursor:val>base?"pointer":"default",fontSize:12,lineHeight:1}}>−</button>
+                  <span style={{fontFamily:"var(--font-mono)",fontSize:13,color:at.color,width:24,textAlign:"center"}}>{val}</span>
+                  <button onClick={()=>spend(at.id)} disabled={pts<=0} style={{width:20,height:20,background:pts>0?at.color+"22":"#111",border:"1px solid "+(pts>0?at.color:"#222"),color:pts>0?at.color:"#333",cursor:pts>0?"pointer":"default",fontSize:12,lineHeight:1}}>+</button>
+                </div>
+                {gained>0&&<span style={{fontSize:8,color:at.color,fontFamily:"var(--font-mono)",width:20}}>+{gained}</span>}
+              </div>
+            );
+          })}
+        </div>
+        {activeSynergies.length>0&&(
+          <div style={{marginBottom:16}}>
+            <div style={{fontSize:8,color:"#444",letterSpacing:3,fontFamily:"var(--font-mono)",marginBottom:8}}>ACTIVE SYNERGIES</div>
+            {activeSynergies.map(s=>(
+              <div key={s.name} style={{background:s.color+"11",border:"1px solid "+s.color+"33",padding:"8px 12px",marginBottom:4}}>
+                <div style={{fontSize:10,color:s.color,fontFamily:"var(--font-display)",fontWeight:700,letterSpacing:2}}>{s.name}</div>
+                <div style={{fontSize:9,color:"#555",marginTop:2}}>{s.desc}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>onSave({...char,attrs,skillPoints:pts})} style={{flex:2,padding:"10px",background:"var(--ac)22",border:"1px solid var(--ac)",color:"var(--ac)",fontFamily:"var(--font-display)",fontSize:12,fontWeight:700,letterSpacing:2,cursor:"pointer"}}>SAVE STATS</button>
+          <button onClick={onClose} style={{flex:1,padding:"10px",background:"#111",border:"1px solid #222",color:"#555",fontFamily:"var(--font-mono)",fontSize:10,cursor:"pointer"}}>CANCEL</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// SHARED UI COMPONENTS
+// ─────────────────────────────────────────────
+function Shell({title,color,onSave,onCancel,disabled,children}){
+  return(
+    <div style={{background:"var(--bg)",border:"1px solid "+color+"22",padding:16,marginBottom:12}}>
+      <div style={{fontFamily:"var(--font-display)",fontSize:14,fontWeight:700,color,letterSpacing:3,marginBottom:14}}>{title}</div>
+      {children}
+      <div style={{display:"flex",gap:8,marginTop:14}}>
+        <button onClick={onSave} disabled={disabled} style={{flex:2,padding:"9px",background:disabled?"#111":color+"22",border:"1px solid "+(disabled?"#222":color),color:disabled?"#333":color,fontFamily:"var(--font-display)",fontSize:11,fontWeight:700,letterSpacing:2,cursor:disabled?"default":"pointer"}}>✓ SAVE</button>
+        <button onClick={onCancel} style={{flex:1,padding:"9px",background:"#111",border:"1px solid #1a1a2e",color:"#444",fontFamily:"var(--font-mono)",fontSize:9,cursor:"pointer"}}>CANCEL</button>
+      </div>
+    </div>
+  );
+}
+function TwoCol({children}){return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>{children}</div>;}
+function Lbl({children}){return <div style={{fontSize:9,letterSpacing:3,color:"#555",marginBottom:4,fontFamily:"var(--font-mono)"}}>{children}</div>;}
+function SecHead({label,action,onAction}){return <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}><div style={{fontFamily:"var(--font-mono)",fontSize:9,letterSpacing:4,color:"#333"}}>{label}</div>{action&&<button onClick={onAction} style={{fontSize:8,color:"var(--ac)",background:"none",border:"none",cursor:"pointer",fontFamily:"var(--font-mono)",letterSpacing:1}}>{action}</button>}</div>;}
+function FBtn({label,active,color,onClick}){return <button onClick={onClick} style={{padding:"5px 10px",background:active?color+"22":"transparent",border:"1px solid "+(active?color:"#1a1a2e"),color:active?color:"#444",fontSize:8,letterSpacing:2,cursor:"pointer",fontFamily:"var(--font-mono)",whiteSpace:"nowrap",flexShrink:0}}>{label}</button>;}
+function FatBtn({children,color,onClick}){return <button onClick={onClick} style={{padding:"7px 14px",background:color+"22",border:"1px solid "+color,color,fontSize:9,letterSpacing:2,cursor:"pointer",fontFamily:"var(--font-mono)"}}>{children}</button>;}
+function Empty({text}){return <div style={{fontSize:12,color:"#222",textAlign:"center",padding:"40px 0",fontFamily:"var(--font-mono)",letterSpacing:2}}>{text}</div>;}
+function bs(bg,color,extra){const s={background:bg,border:"1px solid "+color+"33",color,padding:"7px 12px",cursor:"pointer",fontSize:9,letterSpacing:2,fontFamily:"var(--font-mono)"};if(extra)extra.split(";").forEach(e=>{const[k,v]=e.split(":");if(k&&v)s[k.trim()]=v.trim();});return s;}
+function QuestTypeAttrBadge({type}){const at=ATTRS.find(a=>a.questTypes.includes(type));if(!at)return null;return <span style={{fontSize:7,padding:"1px 5px",background:at.color+"22",color:at.color,fontFamily:"var(--font-mono)",letterSpacing:1,marginLeft:4,border:"1px solid "+at.color+"33"}}>{at.label}</span>;}
+function PinScreen({pin,onUnlock}){
+  const [input,setInput]=useState("");const [err,setErr]=useState(false);
+  function check(v){if(hashPin(v)===pin){onUnlock();}else{setErr(true);setTimeout(()=>setErr(false),800);}}
+  return(
+    <div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{textAlign:"center"}}>
+        <div style={{fontFamily:"var(--font-mono)",fontSize:9,letterSpacing:6,color:"var(--ac)33",marginBottom:20}}>SOLO OPERATOR</div>
+        <div style={{fontFamily:"var(--font-mono)",fontSize:11,letterSpacing:4,color:"#444",marginBottom:16}}>ENTER PIN</div>
+        <input type="password" value={input} onChange={e=>{setInput(e.target.value);if(e.target.value.length>=4)check(e.target.value);}} maxLength={8} style={{background:"var(--bg2)",border:"1px solid "+(err?"#fb7185":"#1a1a2e"),color:"var(--text)",padding:"12px 20px",fontSize:18,letterSpacing:8,textAlign:"center",width:180,fontFamily:"var(--font-mono)"}}/>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// HOME TAB
+// ─────────────────────────────────────────────
+function HomeTab(p){
+  const arch=ARCHETYPES.find(a=>a.id===p.char?.archetype);
+  const recent=p.quests.filter(q=>!q.completed).sort((a,b)=>["S","A","B","C","D","E","F"].indexOf(a.rank)-["S","A","B","C","D","E","F"].indexOf(b.rank)).slice(0,5);
+  return(
+    <div>
+      <div style={{background:"var(--bg2)",border:"1px solid "+p.ac+"22",borderLeft:"3px solid "+p.ac,padding:"14px 16px",marginBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
+          <div style={{flex:1}}>
+            <div style={{fontFamily:"var(--font-mono)",fontSize:8,color:"#444",letterSpacing:2,marginBottom:4}}>{arch?.icon} {arch?.label||"OPERATOR"} CLASS</div>
+            <div style={{fontSize:11,color:"#555",lineHeight:1.6}}>{p.char?.mission||"No mission defined."}</div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:3,flexShrink:0}}>
+            {ATTRS.map(at=>{
+              const val=(p.char?.attrs||{})[at.id]||1;
+              const isBonus=arch?.bonus.includes(at.id);
+              return(
+                <div key={at.id} style={{display:"flex",alignItems:"center",gap:5}}>
+                  <span style={{fontSize:7,color:isBonus?at.color:"#333",fontFamily:"var(--font-mono)",width:18,letterSpacing:1}}>{at.dnd}</span>
+                  <div style={{width:50,height:2,background:"#111",borderRadius:1}}>
+                    <div style={{height:"100%",width:(val/20*100)+"%",background:at.color,borderRadius:1}}/>
+                  </div>
+                  <span style={{fontSize:7,color:at.color,fontFamily:"var(--font-mono)",width:14,textAlign:"right"}}>{val}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      {p.activeSynergies.length>0&&(
+        <div style={{marginBottom:12}}>
+          <SecHead label="ACTIVE SYNERGIES"/>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {p.activeSynergies.map(s=>(
+              <div key={s.name} style={{background:s.color+"11",border:"1px solid "+s.color+"33",padding:"5px 10px"}}>
+                <div style={{fontSize:9,color:s.color,fontFamily:"var(--font-display)",fontWeight:700,letterSpacing:2}}>{s.name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:12}}>
+        {[{label:"TOTAL XP",value:formatXP(p.totalXP),color:p.ac},{label:"QUESTS",value:p.quests.filter(q=>q.completed).length+"/"+p.quests.length,color:"#4ade80"},{label:"RANK",value:p.rank,color:p.rankColor}].map(s=>(
+          <div key={s.label} style={{background:"var(--bg2)",border:"1px solid #111",padding:"10px 12px"}}>
+            <div style={{fontSize:8,color:"#333",letterSpacing:2,fontFamily:"var(--font-mono)",marginBottom:4}}>{s.label}</div>
+            <div style={{fontFamily:"var(--font-display)",fontSize:20,fontWeight:900,color:s.color}}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+      {recent.length>0&&(
+        <div>
+          <SecHead label="PRIORITY TARGETS"/>
+          {recent.map(q=>(
+            <div key={q.id} onClick={()=>p.setActiveQuest(q)} style={{background:"var(--bg2)",border:"1px solid #111",borderLeft:"2px solid "+(RANK_COLORS[q.rank]||"#444"),padding:"10px 14px",marginBottom:6,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
+              <div style={{flex:1,overflow:"hidden"}}>
+                <div style={{fontSize:10,color:"#444",fontFamily:"var(--font-mono)",marginBottom:2}}>{q.rank} · {q.type}</div>
+                <div style={{fontWeight:600,color:"var(--text)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{q.title}</div>
+              </div>
+              <div style={{flexShrink:0,textAlign:"right"}}>
+                <div style={{fontSize:9,color:"#555",fontFamily:"var(--font-mono)"}}>{q.xp} XP</div>
+                {q.bounty!==0&&<div style={{fontSize:9,color:q.isCost?"#fb7185":p.hc,fontFamily:"var(--font-mono)"}}>{q.isCost?"-":"+"+"$"+Math.abs(q.bounty||0)}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {recent.length===0&&<Empty text="NO ACTIVE QUESTS · ADD ONE IN QUESTS TAB"/>}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// QUESTS TAB
+// ─────────────────────────────────────────────
+function QuestsTab(p){
+  const [filter,setFilter]=useState("ALL");
+  if(p.addingQuest||p.editingQuest)return <QuestEditor quest={p.editingQuest} onSave={p.saveQuest} onDelete={p.deleteQuest} onCancel={()=>{p.setAddingQuest(false);p.setEditingQuest(null);}}/>;
+  if(p.activeQuest)return <QuestDetail quest={p.activeQuest} ac={p.ac} hc={p.hc} onComplete={p.completeQuest} onUncomplete={p.uncompleteQuest} onEdit={q=>{p.setEditingQuest(q);p.setActiveQuest(null);}} onClose={()=>p.setActiveQuest(null)}/>;
+  const visible=p.quests.filter(q=>{if(filter==="ALL")return true;if(filter==="ACTIVE")return!q.completed;if(filter==="DONE")return q.completed;return q.type===filter;});
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <SecHead label={"QUESTS ("+p.quests.filter(q=>!q.completed).length+" ACTIVE)"}/>
+        <FatBtn color="var(--ac)" onClick={()=>p.setAddingQuest(true)}>+ ADD</FatBtn>
+      </div>
+      <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:8,marginBottom:10,scrollbarWidth:"none"}}>
+        {["ALL","ACTIVE","DONE",...QUEST_TYPES].map(f=><FBtn key={f} label={f} active={filter===f} color={TYPE_COLORS[f]||"var(--ac)"} onClick={()=>setFilter(f)}/>)}
+      </div>
+      {visible.length===0&&<Empty text="NO QUESTS IN THIS FILTER"/>}
+      {visible.map(q=><QuestCard key={q.id} quest={q} hc={p.hc} onClick={()=>p.setActiveQuest(q)}/>)}
+    </div>
+  );
+}
+
+function QuestCard({quest:q,hc,onClick}){
+  const rc=RANK_COLORS[q.rank]||"#444";const tc=TYPE_COLORS[q.type]||"#444";
+  return(
+    <div onClick={onClick} style={{background:"var(--bg2)",border:"1px solid #111",borderLeft:"2px solid "+rc,padding:"12px 14px",marginBottom:6,cursor:"pointer"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+        <div style={{flex:1,overflow:"hidden"}}>
+          <div style={{display:"flex",gap:6,marginBottom:4,flexWrap:"wrap",alignItems:"center"}}>
+            <span style={{fontSize:8,padding:"1px 6px",background:rc+"22",color:rc,fontFamily:"var(--font-mono)",letterSpacing:1}}>{q.rank}</span>
+            <span style={{fontSize:8,padding:"1px 6px",background:tc+"22",color:tc,fontFamily:"var(--font-mono)",letterSpacing:1}}>{q.type}</span>
+            {q.isDaily&&<span style={{fontSize:8,color:"#38bdf8",fontFamily:"var(--font-mono)"}}>🔄</span>}
+            {q.isCost&&<span style={{fontSize:8,color:"#fb7185",fontFamily:"var(--font-mono)"}}>COST</span>}
+            <QuestTypeAttrBadge type={q.type}/>
+          </div>
+          <div style={{fontWeight:600,color:q.completed?"#2a2a2a":"var(--text)",textDecoration:q.completed?"line-through":"none",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{q.title}</div>
+        </div>
+        <div style={{flexShrink:0,textAlign:"right"}}>
+          <div style={{fontSize:9,color:"#444",fontFamily:"var(--font-mono)"}}>{q.xp} XP</div>
+          {q.bounty!==0&&<div style={{fontSize:9,color:q.isCost?"#fb7185":hc,fontFamily:"var(--font-mono)"}}>{q.isCost?"-":"+"+"$"+Math.abs(q.bounty||0)}</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QuestDetail({quest:q,ac,hc,onComplete,onUncomplete,onEdit,onClose}){
+  const rc=RANK_COLORS[q.rank]||"#444";
+  const matchAttr=ATTRS.find(a=>a.questTypes.includes(q.type));
+  return(
+    <div>
+      <button onClick={onClose} style={{...bs("transparent","#444"),marginBottom:12,fontSize:8}}>← BACK</button>
+      <div style={{background:"var(--bg2)",border:"1px solid "+rc+"33",borderTop:"3px solid "+rc,padding:16,marginBottom:10}}>
+        <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap",alignItems:"center"}}>
+          <span style={{fontSize:9,padding:"2px 8px",background:rc+"22",color:rc,fontFamily:"var(--font-mono)",letterSpacing:1}}>{q.rank}</span>
+          <span style={{fontSize:9,color:TYPE_COLORS[q.type]||"#444",fontFamily:"var(--font-mono)"}}>{q.type}</span>
+          {matchAttr&&<span style={{fontSize:8,padding:"1px 6px",background:matchAttr.color+"22",color:matchAttr.color,fontFamily:"var(--font-mono)",border:"1px solid "+matchAttr.color+"33"}}>+{matchAttr.label} SP</span>}
+        </div>
+        <div style={{fontFamily:"var(--font-display)",fontSize:20,fontWeight:700,color:"var(--text)",letterSpacing:1,marginBottom:12,lineHeight:1.2}}>{q.title}</div>
+        {q.lore&&<div style={{fontSize:11,color:"#555",fontStyle:"italic",marginBottom:12,lineHeight:1.6,borderLeft:"2px solid #1a1a2e",paddingLeft:10}}>{q.lore}</div>}
+        {q.objective&&<div><div style={{fontSize:8,color:"#333",letterSpacing:3,fontFamily:"var(--font-mono)",marginBottom:6}}>OBJECTIVE</div><div style={{fontSize:12,color:"#888",lineHeight:1.6,marginBottom:12}}>{q.objective}</div></div>}
+        {q.reward&&<div><div style={{fontSize:8,color:"#333",letterSpacing:3,fontFamily:"var(--font-mono)",marginBottom:6}}>REWARDS</div><div style={{fontSize:11,color:"#666",lineHeight:1.5,marginBottom:12}}>{q.reward}</div></div>}
+        <div style={{display:"flex",gap:8,marginTop:4}}>
+          {q.bounty!==0&&<div style={{fontSize:12,color:q.isCost?"#fb7185":hc,fontFamily:"var(--font-mono)",fontWeight:700}}>{q.isCost?"-":"+"+"$"+Math.abs(q.bounty||0)}</div>}
+          <div style={{fontSize:12,color:ac,fontFamily:"var(--font-mono)"}}>{q.xp} XP</div>
+        </div>
+      </div>
+      <div style={{display:"flex",gap:8}}>
+        {!q.completed?<button onClick={()=>{onComplete(q.id);onClose();}} style={{...bs("#061406","#4ade80","flex:2"),textAlign:"center"}}>✓ COMPLETE QUEST</button>:<button onClick={()=>{onUncomplete(q.id);onClose();}} style={{...bs("#1a1a2e","#666","flex:2"),textAlign:"center"}}>↩ UNCOMPLETE</button>}
+        <button onClick={()=>onEdit(q)} style={bs("#1a1a2e","#555","flex:1")}>✎ EDIT</button>
+      </div>
+    </div>
+  );
+}
+
+function QuestEditor({quest,onSave,onDelete,onCancel}){
+  const [f,setF]=useState(quest||{id:"q"+Date.now(),rank:"D",type:"FIELD",bounty:0,xp:100,title:"",objective:"",reward:"",lore:"",completed:false,isDaily:false,isCost:false});
+  const absBounty=Math.abs(f.bounty);
+  const s=(k,v)=>setF(p=>({...p,[k]:v}));
+  const inp={width:"100%",background:"var(--bg)",border:"1px solid #1a1a2e",color:"var(--text)",padding:"7px 8px"};
+  return <Shell title={quest?"EDIT QUEST":"NEW QUEST"} color="var(--ac)" onSave={()=>onSave(f)} onCancel={onCancel} disabled={!f.title}>
+    <div style={{marginBottom:8}}><Lbl>TITLE</Lbl><input value={f.title} onChange={e=>s("title",e.target.value)} placeholder="Quest name..." style={{...inp,fontSize:13}}/></div>
+    <TwoCol>
+      <div><Lbl>RANK</Lbl><select value={f.rank} onChange={e=>s("rank",e.target.value)} style={inp}>{RANKS.filter(r=>r!=="SSS").map(r=><option key={r}>{r}</option>)}</select></div>
+      <div><Lbl>TYPE</Lbl><select value={f.type} onChange={e=>s("type",e.target.value)} style={inp}>{QUEST_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
+    </TwoCol>
+    <TwoCol>
+      <div><Lbl>XP</Lbl><input type="number" value={f.xp} onChange={e=>s("xp",+e.target.value)} style={inp}/></div>
+      <div>
+        <Lbl>{f.isCost?"COST ($)":"BOUNTY ($)"}</Lbl>
+        <input type="number" min={0} value={absBounty} onChange={e=>{const v=+e.target.value;s("bounty",f.isCost?-v:v);}} style={inp}/>
+        <div onClick={()=>{const next=!f.isCost;setF(p=>({...p,isCost:next,bounty:next?-Math.abs(p.bounty):Math.abs(p.bounty)}));}} style={{display:"flex",alignItems:"center",gap:6,marginTop:6,cursor:"pointer"}}>
+          <div style={{width:14,height:14,border:"2px solid "+(f.isCost?"#fb7185":"#333"),background:f.isCost?"#fb718533":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{f.isCost&&<span style={{color:"#fb7185",fontSize:8,fontWeight:700}}>✓</span>}</div>
+          <span style={{fontSize:9,color:f.isCost?"#fb7185":"#555",fontFamily:"var(--font-mono)",letterSpacing:1}}>COST / PENALTY</span>
+        </div>
+      </div>
+    </TwoCol>
+    <div style={{marginBottom:8}}><Lbl>OBJECTIVE</Lbl><textarea rows={2} value={f.objective} onChange={e=>s("objective",e.target.value)} style={inp}/></div>
+    <div style={{marginBottom:8}}><Lbl>LORE</Lbl><input value={f.lore} onChange={e=>s("lore",e.target.value)} placeholder="Story behind this quest..." style={inp}/></div>
+    <div style={{marginBottom:8}}><Lbl>REWARDS</Lbl><input value={f.reward} onChange={e=>s("reward",e.target.value)} placeholder="XP, skills, unlocks..." style={inp}/></div>
+    <div onClick={()=>s("isDaily",!f.isDaily)} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:f.isDaily?"#0a0f06":"var(--bg)",border:"1px solid "+(f.isDaily?"#4ade8033":"#1a1a2e"),cursor:"pointer",marginBottom:8}}>
+      <div style={{width:16,height:16,border:"2px solid "+(f.isDaily?"#4ade80":"#333"),background:f.isDaily?"#4ade8033":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{f.isDaily&&<span style={{color:"#4ade80",fontSize:9,fontWeight:700}}>✓</span>}</div>
+      <span style={{fontSize:9,color:f.isDaily?"#4ade80":"#555",fontFamily:"var(--font-mono)",letterSpacing:1}}>DAILY QUEST</span>
+    </div>
+    {quest&&<button onClick={()=>onDelete(quest.id)} style={{...bs("#1a0a0a","#fb7185"),width:"100%",textAlign:"center",marginTop:4}}>✕ DELETE QUEST</button>}
+  </Shell>;
+}
+
+// ─────────────────────────────────────────────
+// ARSENAL TAB
+// ─────────────────────────────────────────────
+function ArsenalTab(p){
+  const [filter,setFilter]=useState("ALL");
+  if(p.addingWeapon||p.editingWeapon)return <WeaponEditor weapon={p.editingWeapon} onSave={p.saveWeapon} onCancel={()=>{p.setAddingWeapon(false);p.setEditingWeapon(null);}}/>;
+  const filtered=p.arsenal.filter(w=>filter==="ALL"?true:filter==="OWNED"?w.owned:filter==="AVAILABLE"?!w.owned:w.category===filter);
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+        <div><SecHead label="ARSENAL"/><div style={{fontSize:9,color:p.bountyBank<0?"#fb7185":p.hc,letterSpacing:2,marginTop:1,fontFamily:"var(--font-mono)"}}>BOUNTY: {p.bountyBank<0?"-$"+Math.abs(p.bountyBank).toLocaleString():"$"+p.bountyBank.toLocaleString()}</div></div>
+        <FatBtn color="#f97316" onClick={()=>p.setAddingWeapon(true)}>+ ADD</FatBtn>
+      </div>
+      <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:8,marginBottom:12,scrollbarWidth:"none"}}>
+        {["ALL","OWNED","AVAILABLE",...WEAPON_CATEGORIES].map(f=><FBtn key={f} label={f} active={filter===f} color="#f97316" onClick={()=>setFilter(f)}/>)}
+      </div>
+      {filtered.length===0&&<Empty text="NO ITEMS IN THIS CATEGORY"/>}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(250px,100%),1fr))",gap:10}}>
+        {filtered.map(w=><WeaponCard key={w.id} weapon={w} bountyBank={p.bountyBank} ac={p.ac} hc={p.hc} onBuy={p.buyWeapon} onEdit={()=>p.setEditingWeapon(w)}/>)}
+      </div>
+    </div>
+  );
+}
+
+function WeaponCard({weapon,bountyBank,ac,hc,onBuy,onEdit}){
+  ac=ac||"var(--ac)"; hc=hc||"var(--hc)";
+  const deficit=weapon.cost-bountyBank;
+  return(
+    <div style={{background:weapon.owned?"#0a1a0a":"#0d0d18",border:"2px solid "+(weapon.owned?"#2a4a2a":"#252540"),borderTop:"3px solid "+(weapon.owned?"#4ade80":ac),padding:14,display:"flex",flexDirection:"column"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+        <div><div style={{fontSize:22,marginBottom:3}}>{weapon.icon||"⚙️"}</div><div style={{fontWeight:600,color:weapon.owned?"#4ade80":"var(--text)"}}>{weapon.name}</div><div style={{fontSize:9,color:"#444",fontFamily:"var(--font-mono)",letterSpacing:1,marginTop:2}}>{weapon.category}</div></div>
+        <div style={{fontSize:16,fontWeight:700,color:weapon.owned?"#4ade80":hc,fontFamily:"var(--font-display)"}}>{weapon.cost===0?"FREE":"$"+weapon.cost}</div>
+      </div>
+      <div style={{fontSize:12,color:"#666",lineHeight:1.6,marginBottom:10,flex:1}}>{weapon.description}</div>
+      {weapon.stats&&<div style={{display:"flex",flexDirection:"column",gap:4,marginBottom:10}}>{Object.entries(weapon.stats).map(([k,v])=><div key={k} style={{display:"flex",gap:6,alignItems:"center"}}><span style={{fontSize:8,color:"#444",width:70,fontFamily:"var(--font-mono)",letterSpacing:1}}>{k.toUpperCase()}</span><div style={{flex:1,height:2,background:"#111"}}><div style={{height:"100%",width:v+"%",background:ac}}/></div><span style={{fontSize:8,color:"#444",width:24,textAlign:"right"}}>{v}</span></div>)}</div>}
+      <div style={{display:"flex",gap:7}}>
+        {!weapon.owned&&weapon.cost>0&&<button onClick={()=>onBuy(weapon)} style={{...bs(deficit>0?"#0a0a0a":"#061406",deficit>0?"#f97316":"#4ade80","flex:2"),textAlign:"center"}}>{deficit>0?"⚔ ACQUIRE (-$"+deficit+" deficit)":"⚔ ACQUIRE"}</button>}
+        {weapon.owned&&<div style={{flex:2,textAlign:"center",padding:"6px",fontSize:8,letterSpacing:3,color:"#4ade80",fontFamily:"var(--font-mono)"}}>✓ EQUIPPED</div>}
+        {!weapon.owned&&weapon.cost===0&&<div style={{flex:2,textAlign:"center",padding:"6px",fontSize:8,letterSpacing:3,color:ac,fontFamily:"var(--font-mono)"}}>✓ ACTIVE</div>}
+        <button onClick={onEdit} style={bs("#1a1a2e","#555")}>✎</button>
+      </div>
+    </div>
+  );
+}
+
+function WeaponEditor({weapon,onSave,onCancel}){
+  const [f,setF]=useState(weapon||{id:"w"+Date.now(),name:"",category:"TOOL",description:"",cost:0,owned:false,icon:"⚙️",stats:{power:50,efficiency:50,durability:50}});
+  const s=(k,v)=>setF(p=>({...p,[k]:v}));
+  const inp={width:"100%",background:"var(--bg)",border:"1px solid #1a1a2e",color:"var(--text)",padding:"7px 8px"};
+  return <Shell title={weapon?"EDIT ITEM":"NEW ITEM"} color="#f97316" onSave={()=>onSave(f)} onCancel={onCancel} disabled={!f.name}>
+    <div style={{marginBottom:8}}><Lbl>NAME</Lbl><input value={f.name} onChange={e=>s("name",e.target.value)} style={inp}/></div>
+    <TwoCol>
+      <div><Lbl>CATEGORY</Lbl><select value={f.category} onChange={e=>s("category",e.target.value)} style={inp}>{WEAPON_CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></div>
+      <div><Lbl>ICON</Lbl><input value={f.icon} onChange={e=>s("icon",e.target.value)} style={inp}/></div>
+    </TwoCol>
+    <TwoCol>
+      <div><Lbl>COST ($)</Lbl><input type="number" value={f.cost} onChange={e=>s("cost",+e.target.value)} style={inp}/></div>
+      <div style={{display:"flex",alignItems:"center",gap:8,paddingTop:18}}><input type="checkbox" checked={f.owned} onChange={e=>s("owned",e.target.checked)} id="owned_w"/><label htmlFor="owned_w" style={{fontSize:10,fontFamily:"var(--font-mono)",color:"#4ade80",letterSpacing:1,cursor:"pointer"}}>OWNED</label></div>
+    </TwoCol>
+    <div style={{marginBottom:8}}><Lbl>DESCRIPTION</Lbl><textarea rows={2} value={f.description} onChange={e=>s("description",e.target.value)} style={inp}/></div>
+  </Shell>;
+}
+
+// ─────────────────────────────────────────────
+// MISSIONS TAB
+// ─────────────────────────────────────────────
+function MissionsTab(p){
+  const [adding,setAdding]=useState(false);
+  const [editing,setEditing]=useState(null);
+  if(adding||editing)return <MissionEditor mission={editing} onSave={m=>{p.saveMission(m);setAdding(false);setEditing(null);}} onDelete={p.deleteMission} onCancel={()=>{setAdding(false);setEditing(null);}}/>;
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <SecHead label="LONG-TERM MISSIONS"/>
+        <FatBtn color="#fb7185" onClick={()=>setAdding(true)}>+ ADD</FatBtn>
+      </div>
+      {p.missions.length===0&&<Empty text="NO MISSIONS DEFINED"/>}
+      {p.missions.map(m=>{
+        const pct=Math.min(100,((m.current||0)/m.target)*100);
+        return(
+          <div key={m.id} style={{background:"var(--bg2)",border:"1px solid #111",borderLeft:"2px solid #fb7185",padding:"14px 16px",marginBottom:8}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+              <div style={{flex:1}}><div style={{fontFamily:"var(--font-display)",fontSize:16,fontWeight:700,color:"var(--text)",letterSpacing:1,marginBottom:2}}>{m.title}</div><div style={{fontSize:10,color:"#555",lineHeight:1.5}}>{m.description}</div></div>
+              <button onClick={()=>setEditing(m)} style={{...bs("#1a1a2e","#555"),marginLeft:8,flexShrink:0}}>✎</button>
+            </div>
+            <div style={{height:3,background:"#111",borderRadius:1,marginBottom:6}}><div style={{height:"100%",width:pct+"%",background:"linear-gradient(90deg,#fb7185,#f97316)",transition:"width 0.6s"}}/></div>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:"#444",fontFamily:"var(--font-mono)"}}><span>{m.unit||""}{(m.current||0).toLocaleString()}</span><span>{Math.round(pct)}%</span><span>{m.unit||""}{(m.target||0).toLocaleString()}</span></div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function MissionEditor({mission,onSave,onDelete,onCancel}){
+  const [f,setF]=useState(mission||{id:"m"+Date.now(),title:"",description:"",target:100000,current:0,unit:"$"});
+  const s=(k,v)=>setF(p=>({...p,[k]:v}));
+  const inp={width:"100%",background:"var(--bg)",border:"1px solid #1a1a2e",color:"var(--text)",padding:"7px 8px"};
+  return <Shell title={mission?"EDIT MISSION":"NEW MISSION"} color="#fb7185" onSave={()=>onSave(f)} onCancel={onCancel} disabled={!f.title}>
+    <div style={{marginBottom:8}}><Lbl>TITLE</Lbl><input value={f.title} onChange={e=>s("title",e.target.value)} style={inp}/></div>
+    <div style={{marginBottom:8}}><Lbl>DESCRIPTION</Lbl><textarea rows={2} value={f.description} onChange={e=>s("description",e.target.value)} style={inp}/></div>
+    <TwoCol>
+      <div><Lbl>TARGET</Lbl><input type="number" value={f.target} onChange={e=>s("target",+e.target.value)} style={inp}/></div>
+      <div><Lbl>CURRENT</Lbl><input type="number" value={f.current} onChange={e=>s("current",+e.target.value)} style={inp}/></div>
+    </TwoCol>
+    <div style={{marginBottom:8}}><Lbl>UNIT (e.g. $ or blank)</Lbl><input value={f.unit||""} onChange={e=>s("unit",e.target.value)} placeholder="$" style={inp}/></div>
+    {mission&&<button onClick={()=>{onDelete(mission.id);onCancel();}} style={{...bs("#1a0a0a","#fb7185"),width:"100%",textAlign:"center",marginTop:4}}>✕ DELETE</button>}
+  </Shell>;
+}
+
+// ─────────────────────────────────────────────
+// RECURRING TAB
+// ─────────────────────────────────────────────
+function RecurringTab(p){
+  const [adding,setAdding]=useState(false);
+  const [editing,setEditing]=useState(null);
+  function saveRec(r){
+    const exists=p.recurring.find(x=>x.id===r.id);
+    const newR=exists?p.recurring.map(x=>x.id===r.id?r:x):[...p.recurring,{...r,totalCompletions:0}];
+    p.handleImport({quests:p.quests,arsenal:p.arsenal,missions:p.missions,recurring:newR,bountyBank:p.bountyBank,totalXPBank:p.totalXP});
+    setAdding(false);setEditing(null);
+  }
+  if(adding||editing)return <RecurringEditor rec={editing} onSave={saveRec} onCancel={()=>{setAdding(false);setEditing(null);}}/>;
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <SecHead label="RECURRING MISSIONS"/>
+        <FatBtn color="var(--ac)" onClick={()=>setAdding(true)}>+ ADD</FatBtn>
+      </div>
+      {p.recurring.length===0&&<Empty text="NO RECURRING MISSIONS"/>}
+      {p.recurring.map(r=><RecurringCard key={r.id} r={r} ac={p.ac} onComplete={p.completeRecurring} onEdit={()=>setEditing(r)}/>)}
+    </div>
+  );
+}
+
+function RecurringCard({r,ac,onComplete,onEdit}){
+  ac=ac||"var(--ac)";
+  const milestones=[10,25,50,100,250,500];
+  const nextMs=milestones.find(m=>m>(r.totalCompletions||0))||500;
+  const pct=Math.min(100,((r.totalCompletions||0)/nextMs)*100);
+  return(
+    <div style={{background:"var(--bg2)",border:"1px solid #111",borderLeft:"3px solid "+ac,padding:14,marginBottom:8}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+        <div style={{flex:1}}>
+          <div style={{fontSize:10,letterSpacing:2,color:ac,fontFamily:"var(--font-mono)"}}>{r.frequency||"RECURRING"}</div>
+          <div style={{fontFamily:"var(--font-display)",fontSize:15,fontWeight:700,color:"var(--text)",letterSpacing:1}}>{r.title}</div>
+          {r.description&&<div style={{fontSize:11,color:"#555",marginTop:4}}>{r.description}</div>}
+        </div>
+        <div style={{flexShrink:0,textAlign:"right",marginLeft:10}}>
+          <div style={{fontSize:16,fontWeight:900,color:ac,fontFamily:"var(--font-display)"}}>{r.totalCompletions||0}x</div>
+          <div style={{fontSize:8,color:"#333",fontFamily:"var(--font-mono)"}}>{r.xp||0} XP</div>
+        </div>
+      </div>
+      <div style={{height:3,background:"#111",borderRadius:1,marginBottom:4,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:"linear-gradient(90deg,"+ac+",#a78bfa)",transition:"width 0.6s"}}/></div>
+      <div style={{display:"flex",justifyContent:"space-between",fontSize:8,color:"#333",fontFamily:"var(--font-mono)",marginBottom:10}}>
+        <span>{r.totalCompletions||0}</span><span style={{color:ac}}>{r.totalCompletions||0}/{nextMs}</span><span>{nextMs}</span>
+      </div>
+      <div style={{display:"flex",gap:7}}>
+        <button onClick={()=>onComplete(r.id)} style={{...bs(ac+"22",ac,"flex:2"),textAlign:"center"}}>✓ COMPLETE</button>
+        <button onClick={onEdit} style={bs("#1a1a2e","#555")}>✎</button>
+      </div>
+    </div>
+  );
+}
+
+function RecurringEditor({rec,onSave,onCancel}){
+  const [f,setF]=useState(rec||{id:"r"+Date.now(),title:"",description:"",frequency:"WEEKLY",xp:100,bounty:0,totalCompletions:0});
+  const s=(k,v)=>setF(p=>({...p,[k]:v}));
+  const inp={width:"100%",background:"var(--bg)",border:"1px solid #1a1a2e",color:"var(--text)",padding:"7px 8px"};
+  return <Shell title={rec?"EDIT RECURRING":"NEW RECURRING"} color="var(--ac)" onSave={()=>onSave(f)} onCancel={onCancel} disabled={!f.title}>
+    <div style={{marginBottom:8}}><Lbl>TITLE</Lbl><input value={f.title} onChange={e=>s("title",e.target.value)} style={inp}/></div>
+    <TwoCol>
+      <div><Lbl>FREQUENCY</Lbl><select value={f.frequency} onChange={e=>s("frequency",e.target.value)} style={inp}>{["DAILY","WEEKLY","MONTHLY"].map(x=><option key={x}>{x}</option>)}</select></div>
+      <div><Lbl>XP</Lbl><input type="number" value={f.xp} onChange={e=>s("xp",+e.target.value)} style={inp}/></div>
+    </TwoCol>
+    <div style={{marginBottom:8}}><Lbl>DESCRIPTION</Lbl><textarea rows={2} value={f.description} onChange={e=>s("description",e.target.value)} style={inp}/></div>
+  </Shell>;
+}
+
+// ─────────────────────────────────────────────
+// DATA PANEL
+// ─────────────────────────────────────────────
+function DataPanel({quests,arsenal,missions,recurring,bountyBank,totalXPBank,rankThresholds,settings,char,onImport,onSaveRankThresholds,onSaveSettings,onSaveChar,onChangePin}){
+  const [open,setOpen]=useState(false);
+  const [sec,setSec]=useState("data");
+  const [importText,setImportText]=useState("");
+  const [importError,setImportError]=useState("");
+  const [importMode,setImportMode]=useState("merge");
+  const [editT,setEditT]=useState((rankThresholds||RANK_THRESHOLDS).slice(0,-1).map(formatXP));
+  const [editS,setEditS]=useState(settings||DEFAULT_SETTINGS);
+  useEffect(()=>{setEditS(settings||DEFAULT_SETTINGS);},[settings]);
+  useEffect(()=>{setEditT((rankThresholds||RANK_THRESHOLDS).slice(0,-1).map(formatXP));},[rankThresholds]);
+
+  const ac=settings?.accentColor||"#6366f1";
+  const tabStyle=(t)=>({padding:"6px 10px",background:sec===t?ac+"22":"transparent",border:"none",borderBottom:"2px solid "+(sec===t?ac:"transparent"),color:sec===t?ac:"#444",cursor:"pointer",fontFamily:"var(--font-mono)",fontSize:8,letterSpacing:2});
+
+  function doExport(){
+    const d={quests,arsenal,missions,recurring,bountyBank,totalXPBank};
+    const blob=new Blob([JSON.stringify(d,null,2)],{type:"application/json"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="solo-operator-"+new Date().toISOString().slice(0,10)+".json";a.click();
+  }
+
+  function doImport(){
+    try{
+      const d=JSON.parse(importText);
+      if(importMode==="restore"){onImport(d);setImportText("");setOpen(false);return;}
+      const lMap={};(quests||[]).forEach(q=>{lMap[q.id]=q;});
+      const mq=(d.quests||[]).map(q=>{const lv=lMap[q.id];return lv?{...q,completed:lv.completed}:q;});
+      (quests||[]).forEach(q=>{if(!mq.find(x=>x.id===q.id))mq.push(q);});
+      const laMap={};(arsenal||[]).forEach(w=>{laMap[w.id]=w;});
+      const ma=(d.arsenal||[]).map(w=>{const lv=laMap[w.id];return lv?{...w,owned:lv.owned}:w;});
+      (arsenal||[]).forEach(w=>{if(!ma.find(x=>x.id===w.id))ma.push(w);});
+      const lrMap={};(recurring||[]).forEach(r=>{lrMap[r.id]=r;});
+      const merged={...d,quests:mq,arsenal:ma,bountyBank,totalXPBank};
+      if(d.recurring)merged.recurring=d.recurring.map(r=>{const lv=lrMap[r.id];return lv?{...r,totalCompletions:lv.totalCompletions}:r;});
+      onImport(merged);setImportText("");setOpen(false);
+    }catch(e){setImportError("INVALID JSON");}
+  }
+
+  function saveRanks(){const t=[...editT.map(v=>parseXP(v)),1e15];onSaveRankThresholds(t);setOpen(false);}
+  function resetRanks(){const def=RANK_THRESHOLDS.slice(0,-1).map(formatXP);setEditT(def);onSaveRankThresholds(RANK_THRESHOLDS.slice());}
+
+  return(
+    <>
+      <button onClick={()=>setOpen(!open)} style={{position:"fixed",bottom:isMobile?70:90,right:12,zIndex:60,background:"var(--bg2)",border:"1px solid #1a1a2e",borderRight:"none",color:ac,padding:"8px 12px",cursor:"pointer",fontFamily:"var(--font-mono)",fontSize:10,letterSpacing:2}}>⚙ SYS</button>
+      {open&&(
+        <div style={{position:"fixed",inset:0,zIndex:100,display:"flex",justifyContent:"flex-end"}} onClick={()=>setOpen(false)}>
+          <div style={{background:"var(--bg2)",borderLeft:"1px solid #1a1a2e",width:300,height:"100%",overflowY:"auto",padding:16}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+              <div style={{fontFamily:"var(--font-mono)",fontSize:9,letterSpacing:3,color:"#444"}}>SYSTEM</div>
+              <button onClick={()=>setOpen(false)} style={{background:"none",border:"none",color:"#444",cursor:"pointer",fontSize:16}}>✕</button>
+            </div>
+            <div style={{display:"flex",gap:2,marginBottom:16,flexWrap:"wrap"}}>
+              {["data","ranks","settings","security"].map(t=><button key={t} onClick={()=>setSec(t)} style={tabStyle(t)}>{t.toUpperCase()}</button>)}
+            </div>
+
+            {sec==="data"&&<>
+              <button onClick={doExport} style={{...bs("var(--bg)","#4ade80"),width:"100%",textAlign:"center",marginBottom:12}}>⬇ EXPORT SAVE</button>
+              <div style={{marginBottom:8}}>
+                <Lbl>IMPORT MODE</Lbl>
+                {[{v:"merge",label:"MERGE",desc:"Keep XP & progress"},{v:"restore",label:"RESTORE",desc:"Full overwrite"}].map(m=>(
+                  <div key={m.v} onClick={()=>setImportMode(m.v)} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 8px",background:importMode===m.v?"var(--bg)":"transparent",border:"1px solid "+(importMode===m.v?ac:"#111"),cursor:"pointer",marginBottom:4}}>
+                    <div style={{width:8,height:8,borderRadius:"50%",background:importMode===m.v?ac:"#333"}}/>
+                    <div><div style={{fontSize:9,color:importMode===m.v?ac:"#555",fontFamily:"var(--font-mono)",letterSpacing:1}}>{m.label}</div><div style={{fontSize:8,color:"#333"}}>{m.desc}</div></div>
+                  </div>
+                ))}
+              </div>
+              <textarea value={importText} onChange={e=>{setImportText(e.target.value);setImportError("");}} placeholder="Paste JSON here..." rows={6} style={{width:"100%",background:"var(--bg)",border:"1px solid #1a1a2e",color:"var(--text)",padding:"8px",fontSize:10,marginBottom:6,resize:"vertical"}}/>
+              {importError&&<div style={{color:"#fb7185",fontSize:9,marginBottom:6,fontFamily:"var(--font-mono)"}}>{importError}</div>}
+              <button onClick={doImport} disabled={!importText.trim()} style={{...bs(importMode==="restore"?"#1a0a0a":"var(--bg)",importMode==="restore"?"#fb7185":ac),width:"100%",textAlign:"center"}}>{importMode==="restore"?"⬆ RESTORE (OVERWRITES)":"⬆ MERGE IMPORT"}</button>
+            </>}
+
+            {sec==="ranks"&&<>
+              <div style={{fontSize:10,color:"#555",marginBottom:12,lineHeight:1.6}}>Set XP per rank. Use: 1k 10k 1m 1b 1t</div>
+              <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12}}>
+                {RANKS.slice(0,-1).map((r,i)=>(
+                  <div key={r} style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",border:"1px solid "+RANK_COLORS[r]+"44",fontFamily:"var(--font-display)",fontWeight:700,color:RANK_COLORS[r],fontSize:13,flexShrink:0}}>{r}</div>
+                    <div style={{flex:1,fontSize:9,color:"#444",fontFamily:"var(--font-mono)"}}>{RANK_TITLES[r].split("·")[0].trim()}</div>
+                    <input type="text" value={editT[i]||""} onChange={e=>{const t=[...editT];t[i]=e.target.value;setEditT(t);}} placeholder="1k" style={{width:80,textAlign:"right",background:"var(--bg)",border:"1px solid #1a1a2e",color:"var(--text)",padding:"5px 8px",fontSize:11,fontFamily:"var(--font-mono)"}}/>
+                  </div>
+                ))}
+                <div style={{display:"flex",alignItems:"center",gap:10,opacity:0.3}}>
+                  <div style={{width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",border:"1px solid #ffffff22",color:"#fff",fontFamily:"var(--font-display)",fontWeight:700,fontSize:13}}>SSS</div>
+                  <div style={{flex:1,fontSize:9,color:"#444",fontFamily:"var(--font-mono)"}}>∞ BEYOND REACH</div>
+                  <div style={{width:80,textAlign:"right",fontSize:11,color:"#333",padding:"5px 8px",fontFamily:"var(--font-mono)"}}>∞</div>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:6}}>
+                <button onClick={saveRanks} style={{...bs(ac+"33",ac),flex:2,textAlign:"center"}}>✓ SAVE RANKS</button>
+                <button onClick={resetRanks} style={{...bs("#1a1a2e","#666"),textAlign:"center"}}>↺ RESET</button>
+              </div>
+            </>}
+
+            {sec==="settings"&&<div style={{display:"flex",flexDirection:"column",gap:14}}>
+              <div>
+                <Lbl>FONT SIZE — {editS.fontSize}px</Lbl>
+                <input type="range" min={11} max={18} value={editS.fontSize||14} onChange={e=>setEditS(s=>({...s,fontSize:+e.target.value}))} style={{width:"100%"}}/>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:"#444",marginTop:3,fontFamily:"var(--font-mono)"}}><span>11px</span><span style={{color:ac}}>{editS.fontSize}px</span><span>18px</span></div>
+              </div>
+              <div>
+                <Lbl>CARD SIZE — {editS.cardSize||100}%</Lbl>
+                <input type="range" min={70} max={130} value={editS.cardSize||100} onChange={e=>setEditS(s=>({...s,cardSize:+e.target.value}))} style={{width:"100%"}}/>
+              </div>
+              <div>
+                <Lbl>HEADER SIZE — {editS.headerSize||100}%</Lbl>
+                <input type="range" min={70} max={130} value={editS.headerSize||100} onChange={e=>setEditS(s=>({...s,headerSize:+e.target.value}))} style={{width:"100%"}}/>
+              </div>
+              <div>
+                <Lbl>ACCENT COLOR</Lbl>
+                <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:4,marginBottom:6}}>
+                  {["#6366f1","#38bdf8","#a78bfa","#4ade80","#f97316","#fb7185","#facc15","#2dd4bf","#f472b6","#fff"].map(c=>(
+                    <div key={c} onClick={()=>setEditS(s=>({...s,accentColor:c}))} style={{width:26,height:26,background:c,cursor:"pointer",outline:editS.accentColor===c?"2px solid #fff":"none",borderRadius:2}}/>
+                  ))}
+                </div>
+                <input value={editS.accentColor||""} onChange={e=>setEditS(s=>({...s,accentColor:e.target.value}))} placeholder="#6366f1" style={{width:"100%",background:"var(--bg)",border:"1px solid #1a1a2e",color:"var(--text)",padding:"5px 8px",fontSize:11}}/>
+              </div>
+              <div>
+                <Lbl>HIGHLIGHT COLOR</Lbl>
+                <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:4,marginBottom:6}}>
+                  {["#facc15","#4ade80","#fb7185","#38bdf8","#a78bfa","#f97316","#2dd4bf","#6366f1","#f472b6","#fff"].map(c=>(
+                    <div key={c} onClick={()=>setEditS(s=>({...s,highlightColor:c}))} style={{width:26,height:26,background:c,cursor:"pointer",outline:editS.highlightColor===c?"2px solid #fff":"none",borderRadius:2}}/>
+                  ))}
+                </div>
+                <input value={editS.highlightColor||""} onChange={e=>setEditS(s=>({...s,highlightColor:e.target.value}))} placeholder="#facc15" style={{width:"100%",background:"var(--bg)",border:"1px solid #1a1a2e",color:"var(--text)",padding:"5px 8px",fontSize:11}}/>
+              </div>
+              <div>
+                <Lbl>THEME</Lbl>
+                <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                  {THEMES.map(t=>(
+                    <div key={t.id} onClick={()=>setEditS(s=>({...s,theme:t.id}))} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 10px",background:editS.theme===t.id?"var(--bg)":"transparent",border:"1px solid "+(editS.theme===t.id?ac:"#111"),cursor:"pointer"}}>
+                      <div style={{width:16,height:16,background:t.preview.bg,border:"2px solid "+t.preview.ac,borderRadius:2,flexShrink:0}}/>
+                      <span style={{fontSize:9,color:editS.theme===t.id?ac:"#555",fontFamily:"var(--font-mono)",letterSpacing:1,flex:1}}>{t.label}</span>
+                      {editS.theme===t.id&&<span style={{color:ac,fontSize:10}}>✓</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div onClick={()=>setEditS(s=>({...s,mobile:!s.mobile}))} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:"var(--bg)",border:"1px solid #1a1a2e",cursor:"pointer"}}>
+                <div style={{width:34,height:18,background:editS.mobile?"#333":ac,borderRadius:9,position:"relative",flexShrink:0,transition:"background 0.2s"}}><div style={{width:14,height:14,background:"#fff",borderRadius:"50%",position:"absolute",top:2,left:editS.mobile?2:18,transition:"left 0.2s"}}/></div>
+                <span style={{fontSize:9,color:editS.mobile?"#555":ac,fontFamily:"var(--font-mono)",letterSpacing:2}}>{editS.mobile?"MOBILE MODE":"DESKTOP MODE"}</span>
+              </div>
+              <button onClick={()=>{onSaveSettings(editS);applyTheme(editS.theme);setOpen(false);}} style={{...bs(ac+"22",ac),width:"100%",textAlign:"center"}}>APPLY SETTINGS</button>
+              <button onClick={()=>{const d={...DEFAULT_SETTINGS};setEditS(d);onSaveSettings(d);applyTheme(d.theme);}} style={{...bs("#1a1a2e","#666"),width:"100%",textAlign:"center"}}>RESET DEFAULTS</button>
+            </div>}
+
+            {sec==="security"&&<>
+              <div style={{fontSize:10,color:"#555",marginBottom:12,lineHeight:1.6}}>Set a PIN to lock the app on open.</div>
+              <button onClick={()=>{const p=window.prompt("Enter new PIN (4-8 digits):");if(p&&p.length>=4){localStorage.setItem(PIN_KEY,hashPin(p));alert("PIN set. Reload to activate.");}}} style={{...bs("var(--bg)",ac),width:"100%",textAlign:"center",marginBottom:8}}>🔐 SET PIN</button>
+              <button onClick={()=>{if(window.confirm("Remove PIN?"))localStorage.removeItem(PIN_KEY);}} style={{...bs("#1a0a0a","#fb7185"),width:"100%",textAlign:"center",marginBottom:16}}>✕ REMOVE PIN</button>
+              <div style={{height:1,background:"#111",marginBottom:16}}/>
+              <button onClick={()=>{if(window.confirm("Reset character? Keeps quest data.")){localStorage.removeItem(CHAR_KEY);window.location.reload();}}} style={{...bs("#1a0a0a","#fb7185"),width:"100%",textAlign:"center"}}>↺ RESET CHARACTER</button>
+            </>}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────
+// MAIN APP
+// ─────────────────────────────────────────────
+function App(){
+  const [char,setChar]=useState(()=>{try{const s=localStorage.getItem(CHAR_KEY);return s?JSON.parse(s):null;}catch(e){return null;}});
+  const [settings,setSettings]=useState(()=>{try{const s=localStorage.getItem(SETTINGS_KEY);return s?{...DEFAULT_SETTINGS,...JSON.parse(s)}:DEFAULT_SETTINGS;}catch(e){return DEFAULT_SETTINGS;}});
+  const [rankThresholds,setRankThresholds]=useState(()=>{try{const s=localStorage.getItem(RANK_KEY);return s?JSON.parse(s):RANK_THRESHOLDS.slice();}catch(e){return RANK_THRESHOLDS.slice();}});
+  const [quests,setQuests]=useState([]);
+  const [arsenal,setArsenal]=useState([]);
+  const [missions,setMissions]=useState([]);
+  const [recurring,setRecurring]=useState([]);
+  const [bountyBank,setBountyBank]=useState(0);
+  const [totalXPBank,setTotalXPBank]=useState(0);
+  const [tab,setTab]=useState("home");
+  const [flash,setFlash]=useState(null);
+  const [unlocked,setUnlocked]=useState(false);
+  const [pin,setPin]=useState(()=>{try{return localStorage.getItem(PIN_KEY)||"";}catch(e){return "";}});
+  const [showSkills,setShowSkills]=useState(false);
+  const [addingQuest,setAddingQuest]=useState(false);
+  const [editingQuest,setEditingQuest]=useState(null);
+  const [addingWeapon,setAddingWeapon]=useState(false);
+  const [editingWeapon,setEditingWeapon]=useState(null);
+  const [activeQuest,setActiveQuest]=useState(null);
+
+  useEffect(()=>{if(char)applyTheme(char.theme||settings.theme||"operator");},[char]);
+
+  const save=useCallback((q,a,m,r,b,xb)=>{
+    try{localStorage.setItem(STORAGE_KEY,JSON.stringify({quests:q,arsenal:a,missions:m,recurring:r,bountyBank:b,totalXPBank:xb}));}catch(e){}
+  },[]);
+
+  useEffect(()=>{
+    let data=null;
+    try{const s=localStorage.getItem(STORAGE_KEY);if(s)data=JSON.parse(s);}catch(e){}
+    if(!data){for(const k of PREV_KEYS){try{const s=localStorage.getItem(k);if(s){data=JSON.parse(s);break;}}catch(e){}}}
+    if(data){setQuests(data.quests||[]);setArsenal(data.arsenal||[]);setMissions(data.missions||[]);setRecurring(data.recurring||[]);setBountyBank(data.bountyBank||0);setTotalXPBank(data.totalXPBank||0);}
+    if(!pin)setUnlocked(true);
+  },[]);
+
+  function flash_(msg,color){setFlash({msg,color:color||"#4ade80"});setTimeout(()=>setFlash(null),2200);}
+  function saveSettings(s){setSettings(s);localStorage.setItem(SETTINGS_KEY,JSON.stringify(s));}
+  function saveRankThresholds(t){setRankThresholds(t);localStorage.setItem(RANK_KEY,JSON.stringify(t));flash_("RANKS UPDATED","var(--ac)");}
+  function saveChar(c){setChar(c);localStorage.setItem(CHAR_KEY,JSON.stringify(c));}
+
+  function handleOnboardingComplete(c,themeId){
+    saveChar(c);
+    const th=THEMES.find(t=>t.id===themeId);
+    const ns={...settings,theme:themeId,accentColor:th?.preview.ac||"#6366f1",highlightColor:th?.preview.hc||"#facc15"};
+    saveSettings(ns);
+  }
+
+  function completeQuest(id){
+    const q=quests.find(x=>x.id===id);if(!q||q.completed)return;
+    const newQ=quests.map(x=>x.id===id?{...x,completed:true}:x);
+    const nb=bountyBank+(q.bounty||0);
+    const nxb=totalXPBank+(q.xp||0);
+    const spFromXP=Math.floor((q.xp||0)/100);
+    const matchAttr=ATTRS.find(a=>a.questTypes.includes(q.type));
+    const spBonus=char&&matchAttr?1:0;
+    const totalSP=spFromXP+spBonus;
+    const prevRank=getRank(totalXPBank,rankThresholds);
+    const newRank=getRank(nxb,rankThresholds);
+    setQuests(newQ);setBountyBank(nb);setTotalXPBank(nxb);
+    save(newQ,arsenal,missions,recurring,nb,nxb);
+    if(totalSP>0&&char){
+      const nc={...char,skillPoints:(char.skillPoints||0)+totalSP,totalSPEarned:(char.totalSPEarned||0)+totalSP};
+      saveChar(nc);
+      flash_("+"+q.xp+" XP · +"+totalSP+" SP","var(--ac)");
+    } else {
+      flash_("+"+q.xp+" XP","var(--ac)");
+    }
+    if(newRank!==prevRank){
+      const rankSP=RANK_SP_BONUS[newRank]||0;
+      if(rankSP>0&&char){
+        const rc2={...char,skillPoints:(char.skillPoints||0)+totalSP+rankSP,totalSPEarned:(char.totalSPEarned||0)+totalSP+rankSP};
+        saveChar(rc2);
+        setTimeout(()=>flash_("RANK UP: "+newRank+" · +"+rankSP+" SKILL POINTS",RANK_COLORS[newRank]),600);
+      }
+    }
+  }
+
+  function uncompleteQuest(id){
+    const q=quests.find(x=>x.id===id);if(!q||!q.completed)return;
+    const newQ=quests.map(x=>x.id===id?{...x,completed:false}:x);
+    const nb=bountyBank-(q.bounty||0);
+    const nxb=Math.max(0,totalXPBank-(q.xp||0));
+    setQuests(newQ);setBountyBank(nb);setTotalXPBank(nxb);
+    save(newQ,arsenal,missions,recurring,nb,nxb);
+  }
+
+  function deleteQuest(id){
+    const q=quests.find(x=>x.id===id);
+    const nb=q?.completed?bountyBank-(q.bounty||0):bountyBank;
+    const nxb=q?.completed?Math.max(0,totalXPBank-(q.xp||0)):totalXPBank;
+    const newQ=quests.filter(x=>x.id!==id);
+    setQuests(newQ);setBountyBank(nb);setTotalXPBank(nxb);
+    save(newQ,arsenal,missions,recurring,nb,nxb);
+    setActiveQuest(null);setEditingQuest(null);
+  }
+
+  function saveQuest(q){
+    const exists=quests.find(x=>x.id===q.id);
+    const newQ=exists?quests.map(x=>x.id===q.id?q:x):[...quests,q];
+    setQuests(newQ);save(newQ,arsenal,missions,recurring,bountyBank,totalXPBank);
+    setAddingQuest(false);setEditingQuest(null);flash_("QUEST SAVED","var(--ac)");
+  }
+
+  function buyWeapon(w){
+    const newA=arsenal.map(x=>x.id===w.id?{...x,owned:true}:x);
+    const nb=bountyBank-w.cost;
+    setArsenal(newA);setBountyBank(nb);
+    save(quests,newA,missions,recurring,nb,totalXPBank);
+    flash_(w.name+" ACQUIRED",RANK_COLORS["A"]);
+  }
+
+  function saveWeapon(w){
+    const exists=arsenal.find(x=>x.id===w.id);
+    const newA=exists?arsenal.map(x=>x.id===w.id?w:x):[...arsenal,w];
+    setArsenal(newA);save(quests,newA,missions,recurring,bountyBank,totalXPBank);
+    setAddingWeapon(false);setEditingWeapon(null);flash_("ITEM SAVED","var(--ac)");
+  }
+
+  function saveMission(m){
+    const exists=missions.find(x=>x.id===m.id);
+    const newM=exists?missions.map(x=>x.id===m.id?m:x):[...missions,m];
+    setMissions(newM);save(quests,arsenal,newM,recurring,bountyBank,totalXPBank);flash_("MISSION SAVED","var(--ac)");
+  }
+
+  function deleteMission(id){const newM=missions.filter(x=>x.id!==id);setMissions(newM);save(quests,arsenal,newM,recurring,bountyBank,totalXPBank);}
+
+  function completeRecurring(id){
+    const r=recurring.find(x=>x.id===id);if(!r)return;
+    const nb=bountyBank+(r.bounty||0);
+    const nxb=totalXPBank+(r.xp||0);
+    const newR=recurring.map(x=>x.id===id?{...x,lastCompleted:new Date().toISOString(),totalCompletions:(x.totalCompletions||0)+1}:x);
+    setRecurring(newR);setBountyBank(nb);setTotalXPBank(nxb);
+    save(quests,arsenal,missions,newR,nb,nxb);
+    flash_("+"+r.xp+" XP","var(--ac)");
+  }
+
+  function quickSave(){save(quests,arsenal,missions,recurring,bountyBank,totalXPBank);flash_("SAVED ✓","var(--ac)");}
+
+  function handleImport(d){
+    if(d.quests)setQuests(d.quests);
+    if(d.arsenal)setArsenal(d.arsenal);
+    if(d.missions)setMissions(d.missions);
+    if(d.recurring)setRecurring(d.recurring);
+    if(typeof d.bountyBank==="number")setBountyBank(d.bountyBank);
+    if(typeof d.totalXPBank==="number")setTotalXPBank(d.totalXPBank);
+    save(d.quests||quests,d.arsenal||arsenal,d.missions||missions,d.recurring||recurring,d.bountyBank??bountyBank,d.totalXPBank??totalXPBank);
+    flash_("DATA IMPORTED","var(--ac)");
+  }
+
+  if(!char)return <Onboarding onComplete={handleOnboardingComplete}/>;
+  if(pin&&!unlocked)return <PinScreen pin={pin} onUnlock={()=>setUnlocked(true)}/>;
+
+  const totalXP=totalXPBank;
+  const rank=getRank(totalXP,rankThresholds);
+  const nextXP=getNextXP(totalXP,rankThresholds);
+  const rankColor=RANK_COLORS[rank];
+  const rankIdx=RANKS.indexOf(rank);
+  const prevThresh=rankThresholds[rankIdx]||0;
+  const nextThresh=nextXP||1;
+  const rankPct=rank==="SSS"?100:Math.min(100,((totalXP-prevThresh)/(nextThresh-prevThresh))*100);
+  const ac=settings.accentColor||"#6366f1";
+  const hc=settings.highlightColor||"#facc15";
+  const isMobile=settings.mobile!==false;
+
+  const activeSynergies=char?SYNERGIES.filter(s=>{
+    if(s.attrs.length===6)return Object.values(char.attrs||{}).every(v=>v>=10);
+    return s.attrs.every(id=>(char.attrs||{})[id]>=5);
+  }):[];
+
+  const p={quests,arsenal,missions,recurring,bountyBank,totalXP,rank,rankColor,rankPct,rankThresholds,char,quickSave,saveRankThresholds,saveChar,settings,saveSettings,ac,hc,isMobile,activeQuest,setActiveQuest,addingQuest,setAddingQuest,editingQuest,setEditingQuest,addingWeapon,setAddingWeapon,editingWeapon,setEditingWeapon,completeQuest,uncompleteQuest,deleteQuest,saveQuest,buyWeapon,saveWeapon,saveMission,deleteMission,completeRecurring,handleImport,activeSynergies,flash_,setTab};
+
+  return(
+    <div style={{minHeight:"100vh",background:"var(--bg)",paddingBottom:isMobile?80:0,paddingLeft:isMobile?0:Math.round(110*1.65),fontSize:(settings.fontSize||14)+"px",maxWidth:isMobile?"100%":"none"}}>
+      {flash&&<div style={{position:"fixed",top:20,left:"50%",zIndex:1000,background:"var(--bg2)",border:"1px solid "+flash.color,color:flash.color,padding:"8px 20px",fontFamily:"var(--font-mono)",fontSize:11,letterSpacing:3,transform:"translateX(-50%)",pointerEvents:"none",whiteSpace:"nowrap"}}>{flash.msg}</div>}
+
+      {/* HEADER */}
+      <div style={{background:"var(--bg2)",borderBottom:"1px solid #111",padding:"14px 16px 10px",position:"sticky",top:0,zIndex:40}}>
+        <div style={{maxWidth:760,margin:"0 auto"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+            <div>
+              <div style={{fontSize:9,letterSpacing:6,color:ac+"33",marginBottom:3,fontFamily:"var(--font-mono)"}}>SOLO OPERATOR</div>
+              <div style={{fontSize:20,fontWeight:700,color:"var(--text)",letterSpacing:2,fontFamily:"var(--font-display)",lineHeight:1}}>{char.name||"OPERATOR"}</div>
+              <div style={{fontSize:9,letterSpacing:2,color:"#555",marginTop:1,fontFamily:"var(--font-mono)"}}>{char.title||""} · {char.archetype?.toUpperCase()||""}</div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <button onClick={()=>setShowSkills(true)} style={{background:"none",border:"1px solid "+ac+"44",color:ac,padding:"4px 10px",cursor:"pointer",fontFamily:"var(--font-mono)",fontSize:9,letterSpacing:1}}>SP: {char.skillPoints||0}</button>
+              <button onClick={quickSave} style={{background:"none",border:"1px solid "+hc+"33",color:hc,padding:"4px 8px",cursor:"pointer",fontFamily:"var(--font-mono)",fontSize:9}}>💾</button>
+              {pin&&<button onClick={()=>setUnlocked(false)} style={{background:"none",border:"1px solid #1a1a2e",color:"#444",padding:"4px 8px",cursor:"pointer",fontSize:11}}>🔒</button>}
+            </div>
+          </div>
+          <div style={{marginTop:10,display:"flex",alignItems:"center",gap:10}}>
+            <div style={{fontFamily:"var(--font-display)",fontSize:18,fontWeight:900,color:rankColor,width:32,lineHeight:1}}>{rank}</div>
+            <div style={{flex:1,height:4,background:"#111",borderRadius:2,overflow:"hidden"}}>
+              <div style={{height:"100%",width:rankPct+"%",background:"linear-gradient(90deg,"+ac+","+rankColor+")",transition:"width 0.6s"}}/>
+            </div>
+            <div style={{fontFamily:"var(--font-mono)",fontSize:9,color:"#444"}}>{formatXP(totalXP)} / {formatXP(nextXP)}</div>
+            <div style={{fontFamily:"var(--font-display)",fontSize:15,fontWeight:900,color:bountyBank<0?"#fb7185":hc}}>{bountyBank<0?"-$"+Math.abs(bountyBank).toLocaleString():"$"+bountyBank.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* CONTENT */}
+      <div style={{maxWidth:760,margin:"0 auto",padding:isMobile?"12px 12px 0":"20px 20px 0"}}>
+        {tab==="home"&&<HomeTab {...p}/>}
+        {tab==="quests"&&<QuestsTab {...p}/>}
+        {tab==="arsenal"&&<ArsenalTab {...p}/>}
+        {tab==="missions"&&<MissionsTab {...p}/>}
+        {tab==="recurring"&&<RecurringTab {...p}/>}
+      </div>
+
+      {/* DATA PANEL */}
+      <DataPanel quests={quests} arsenal={arsenal} missions={missions} recurring={recurring} bountyBank={bountyBank} totalXPBank={totalXPBank} rankThresholds={rankThresholds} settings={settings} char={char} onImport={handleImport} onSaveRankThresholds={saveRankThresholds} onSaveSettings={saveSettings} onSaveChar={saveChar} onChangePin={()=>setUnlocked(false)}/>
+
+      {/* NAV */}
+      <div style={{position:"fixed",bottom:isMobile?0:"auto",top:isMobile?"auto":0,left:0,right:isMobile?0:"auto",width:isMobile?"auto":Math.round(110*1.65),height:isMobile?"auto":"100vh",background:"var(--bg2)",borderTop:isMobile?"1px solid #111":"none",borderRight:isMobile?"none":"1px solid #111",display:"flex",flexDirection:isMobile?"row":"column",zIndex:50,paddingTop:isMobile?0:60,alignItems:"center",justifyContent:isMobile?"stretch":"flex-start",gap:isMobile?0:2}}>
+        {[{id:"home",label:"HOME",icon:"⬡"},{id:"quests",label:"QUESTS",icon:"◈"},{id:"arsenal",label:"ARSENAL",icon:"⚔"},{id:"missions",label:"MISSIONS",icon:"◉"},{id:"recurring",label:"RECURRING",icon:"↻"}].map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:isMobile?1:"none",width:isMobile?"auto":Math.round(95*1.65),padding:isMobile?"11px 4px":"14px 8px",background:"none",border:"none",cursor:"pointer",borderTop:isMobile?"2px solid "+(tab===t.id?ac:"transparent"):"none",borderLeft:isMobile?"none":"3px solid "+(tab===t.id?ac:"transparent"),display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+            <span style={{fontSize:isMobile?13:20,color:tab===t.id?ac:"#2a2a2a"}}>{t.icon}</span>
+            <span style={{fontSize:isMobile?6:9,letterSpacing:2,color:tab===t.id?ac:"#2a2a2a",fontFamily:"var(--font-mono)"}}>{t.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {showSkills&&<SkillPanel char={char} onSave={c=>{saveChar(c);setShowSkills(false);flash_("STATS SAVED","var(--ac)");}} onClose={()=>setShowSkills(false)}/>}
+    </div>
+  );
+}
+
+ReactDOM.render(<App/>,document.getElementById("root"));
+</script>
+</body>
+</html>
 // ─── RANK SYSTEM ─────────────────────────────────────────────────────────────
 // F   = Jobless, homeless — starting at rock bottom
 // E   = Unemployed with free time — potential, no momentum
