@@ -44,7 +44,25 @@ const {useState,useEffect,useCallback,useRef} = React;
 // S   = Affecting cities — you are a force
 // SS  = Affecting nations — legacy territory
 // SSS = Unreachable by design — the myth, the ceiling that doesn't exist
-const RANK_THRESHOLDS=[0,300,800,1800,3500,6000,10000,16000,25000,999999999];
+const RANK_THRESHOLDS=[0,1,10,100,1000,10000,100000,1000000,1000000000000];
+function parseXP(v){
+  if(typeof v==="number") return v;
+  const s=String(v).trim().toLowerCase().replace(/,/g,"");
+  if(s==="")return 0;
+  const m={t:1e12,b:1e9,m:1e6,k:1e3};
+  for(const [sfx,mul] of Object.entries(m)){
+    if(s.endsWith(sfx)){const n=parseFloat(s);return isNaN(n)?0:Math.round(n*mul);}
+  }
+  return parseInt(s)||0;
+}
+function formatXP(n){
+  n=Number(n);
+  if(n>=1e12)return(n/1e12).toFixed(n%1e12===0?0:1)+"t";
+  if(n>=1e9)return(n/1e9).toFixed(n%1e9===0?0:1)+"b";
+  if(n>=1e6)return(n/1e6).toFixed(n%1e6===0?0:1)+"m";
+  if(n>=1e3)return(n/1e3).toFixed(n%1e3===0?0:1)+"k";
+  return String(n);
+}
 const RANKS=["F","E","D","C","B","A","S","SS","SSS"];
 const RANK_COLORS={
   F:"#444",
@@ -447,7 +465,7 @@ function App(){
   const p={quests,arsenal,missions,recurring,bountyBank,totalXP,rankThresholds,quickSave,saveRankThresholds,settings,saveSettings,ac,hc,isMobile,activeQuest,setActiveQuest,completeQuest,uncompleteQuest,deleteQuest,buyWeapon,saveQuest,saveMission,saveWeapon,deleteMission,completeRecurring,editingQuest,setEditingQuest,editingMission,setEditingMission,editingWeapon,setEditingWeapon,addingQuest,setAddingQuest,addingWeapon,setAddingWeapon,addingMission,setAddingMission,setTab,rank,rankColor,completed,owned,flash_};
 
   return(
-    <div style={{minHeight:"100vh",background:"#050508",paddingBottom:80,fontSize:settings.fontSize}}>
+    <div style={{minHeight:"100vh",background:"#050508",paddingBottom:isMobile?80:0,paddingLeft:isMobile?0:120,fontSize:(settings.fontSize||14)+"px",display:"flex",flexDirection:isMobile?"column":"row"}}>
       {flash&&<div style={{position:"fixed",top:20,left:"50%",zIndex:1000,background:"#0a0a14",border:`1px solid ${flash.color}`,padding:"10px 24px",fontSize:10,letterSpacing:4,color:flash.color,animation:"flashIn 2.8s forwards",whiteSpace:"nowrap",boxShadow:`0 0 20px ${flash.color}44`}}>{flash.msg}</div>}
 
       {/* HEADER */}
@@ -492,7 +510,7 @@ function App(){
       <DataPanel quests={quests} arsenal={arsenal} missions={missions} recurring={recurring} bountyBank={bountyBank} totalXPBank={totalXPBank} rankThresholds={rankThresholds} settings={settings} onImport={handleImport} onSaveRankThresholds={saveRankThresholds} onSaveSettings={saveSettings} onChangePin={()=>setUnlocked(false)}/>
 
       {/* NAV */}
-      <div style={{position:"fixed",bottom:0,left:0,right:0,background:"#06060f",borderTop:"1px solid #111",display:"flex",zIndex:50}}>
+      <div style={{position:"fixed",bottom:isMobile?0:"auto",top:isMobile?"auto":0,left:0,right:isMobile?0:"auto",width:isMobile?"auto":110,height:isMobile?"auto":"100vh",background:"#06060f",borderTop:isMobile?"1px solid #111":"none",borderRight:isMobile?"none":"1px solid #111",display:"flex",flexDirection:isMobile?"row":"column",zIndex:50,paddingTop:isMobile?0:60,paddingBottom:isMobile?0:20,alignItems:isMobile?"stretch":"center",justifyContent:isMobile?"stretch":"flex-start",gap:isMobile?0:4}}>
         {[{id:"home",label:"HOME",icon:"⬡"},{id:"quests",label:"QUESTS",icon:"◈"},{id:"arsenal",label:"ARSENAL",icon:"⚔"},{id:"missions",label:"MISSIONS",icon:"◎"},{id:"recurring",label:"DAILY",icon:"↻"}].map(t=>(
           <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,padding:"11px 4px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,borderTop:`2px solid ${tab===t.id?ac:"transparent"}`}}>
             <span style={{fontSize:13,color:tab===t.id?ac:"#2a2a2a"}}>{t.icon}</span>
@@ -705,8 +723,8 @@ function ArsenalTab(p){
       <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:8,marginBottom:12,scrollbarWidth:"none"}}>
         {["ALL","OWNED","AVAILABLE",...WEAPON_CATEGORIES].map(f=><FBtn key={f} label={f} active={filter===f} color="#f97316" onClick={()=>setFilter(f)}/>)}
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(250px,1fr))",gap:10}}>
-        {filtered.map(w=><WeaponCard key={w.id} weapon={w} bountyBank={p.bountyBank} onBuy={p.buyWeapon} onEdit={()=>p.setEditingWeapon(w)}/>)}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(250px,100%),1fr))",gap:10}}>
+        {filtered.map(w=><WeaponCard key={w.id} weapon={w} bountyBank={p.bountyBank} ac={p.ac} hc={p.hc} onBuy={p.buyWeapon} onEdit={()=>p.setEditingWeapon(w)}/>)}
       </div>
     </div>
   );
@@ -750,7 +768,7 @@ function QuestCard({quest,active,onSelect,onComplete,onDelete,onEdit,onUncomplet
       <div onClick={onSelect} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",cursor:"pointer",userSelect:"none"}}>
         <div style={{width:30,height:30,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",border:`1px solid ${quest.completed?"#222":rc}`,fontSize:11,fontWeight:700,color:quest.completed?"#333":rc,fontFamily:"'Rajdhani',sans-serif"}}>{quest.completed?"✓":quest.rank}</div>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:14,fontWeight:600,color:quest.completed?"#222":"#e5e5e5",textDecoration:quest.completed?"line-through":"none",fontFamily:"'Barlow',sans-serif"}}>{quest.title}</div>
+          <div style={{fontWeight:600,color:quest.completed?"#222":"#e5e5e5",textDecoration:quest.completed?"line-through":"none",fontFamily:"'Barlow',sans-serif"}}>{quest.title}</div>
           <div style={{fontSize:10,color:quest.completed?"#1a1a1a":tc,letterSpacing:2,marginTop:2,fontFamily:"'Share Tech Mono',monospace"}}>{quest.type} • +{quest.xp}XP{quest.bounty>0?` • ${quest.bounty}`:""}{quest.isDaily?" • 🔄 DAILY":""}</div>
         </div>
         {!quest.completed&&<span style={{color:"#222",fontSize:11}}>{active?"▼":"›"}</span>}
@@ -772,13 +790,14 @@ function QuestCard({quest,active,onSelect,onComplete,onDelete,onEdit,onUncomplet
   );
 }
 
-function WeaponCard({weapon,bountyBank,onBuy,onEdit}){
+function WeaponCard({weapon,bountyBank,ac,hc,onBuy,onEdit}){
+  ac=ac||"#6366f1"; hc=hc||"#facc15";
   const deficit=weapon.cost-bountyBank;
   return(
-    <div style={{background:weapon.owned?"#060f06":"#080810",border:`1px solid ${weapon.owned?"#1a2e1a":"#0d0d1a"}`,borderTop:`2px solid ${weapon.owned?"#4ade80":"#f97316"}`,padding:14}}>
+    <div style={{background:weapon.owned?"#0d1f0d":"#131320",border:`2px solid ${weapon.owned?"#2a4a2a":"#252540"}`,borderTop:`3px solid ${weapon.owned?"#4ade80":ac}`,padding:14,display:"flex",flexDirection:"column"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-        <div><div style={{fontSize:22,marginBottom:3}}>{weapon.icon||"⚙️"}</div><div style={{fontSize:14,fontWeight:600,color:weapon.owned?"#e5e5e5":"#ccc",fontFamily:"'Barlow',sans-serif"}}>{weapon.name}</div><div style={{fontSize:10,letterSpacing:2,color:weapon.owned?"#4ade80":"#f97316",marginTop:2,fontFamily:"'Share Tech Mono',monospace"}}>{weapon.category}{weapon.owned?" • OWNED":""}</div></div>
-        <div style={{fontSize:16,fontWeight:700,color:weapon.owned?"#4ade80":"#facc15",fontFamily:"'Rajdhani',sans-serif"}}>{weapon.cost===0?"FREE":`${weapon.cost}`}</div>
+        <div><div style={{fontSize:22,marginBottom:3}}>{weapon.icon||"⚙️"}</div><div style={{fontWeight:600,color:weapon.owned?"#e5e5e5":"#ccc",fontFamily:"'Barlow',sans-serif"}}>{weapon.name}</div><div style={{fontSize:10,letterSpacing:2,color:weapon.owned?"#4ade80":"#f97316",marginTop:2,fontFamily:"'Share Tech Mono',monospace"}}>{weapon.category}{weapon.owned?" • OWNED":""}</div></div>
+        <div style={{fontSize:16,fontWeight:700,color:weapon.owned?"#4ade80":hc,fontFamily:"'Rajdhani',sans-serif"}}>{weapon.cost===0?"FREE":`${weapon.cost}`}</div>
       </div>
       <div style={{fontSize:12,color:"#666",lineHeight:1.6,marginBottom:10,fontFamily:"'Barlow',sans-serif"}}>{weapon.description}</div>
       {weapon.stats&&<div style={{display:"flex",flexDirection:"column",gap:4,marginBottom:10}}>{Object.entries(weapon.stats).map(([k,v])=><div key={k} style={{display:"flex",alignItems:"center",gap:7}}><span style={{fontSize:7,letterSpacing:2,color:"#333",width:65,textTransform:"uppercase"}}>{k}</span><div style={{flex:1,height:2,background:"#0d0d1a"}}><div style={{height:"100%",width:`${v}%`,background:v>80?"#4ade80":v>50?"#facc15":"#f97316"}}/></div></div>)}</div>}
@@ -836,8 +855,9 @@ function DataPanel({quests,arsenal,missions,recurring,bountyBank,totalXPBank,ran
   const [importText,setImportText]=useState("");
   const [importError,setImportError]=useState("");
   const [importMode,setImportMode]=useState("merge");
-  const [editT,setEditT]=useState((rankThresholds||RANK_THRESHOLDS).slice(0,-1));
+  const [editT,setEditT]=useState((rankThresholds||RANK_THRESHOLDS).slice(0,-1).map(formatXP));
   const [editS,setEditS]=useState(settings||DEFAULT_SETTINGS);
+  React.useEffect(()=>{setEditS(settings||DEFAULT_SETTINGS);},[settings]);
 
   function doExport(){
     const data=JSON.stringify({quests,arsenal,missions,recurring,bountyBank,totalXPBank},null,2);
@@ -884,12 +904,11 @@ function DataPanel({quests,arsenal,missions,recurring,bountyBank,totalXPBank,ran
     }catch(e){setImportError("Invalid data. Paste a valid export.");}
   }
 
-  function saveRanks(){
-    const t=[...editT.map(v=>Number(v)),999999999];
-    onSaveRankThresholds(t);setOpen(false);
+function saveRanks(){
+  const t=[...editT.map(v=>parseXP(v)),1e15];
   }
 
-  function resetRanks(){setEditT(RANK_THRESHOLDS.slice(0,-1));onSaveRankThresholds(RANK_THRESHOLDS.slice());}
+  function resetRanks(){const def=RANK_THRESHOLDS.slice(0,-1).map(formatXP);setEditT(def);onSaveRankThresholds(RANK_THRESHOLDS.slice());}
 
   function clearPin(){
     if(window.confirm("Remove PIN? App will ask you to create a new one on next open.")){localStorage.removeItem(PIN_KEY);onChangePin();}
@@ -934,7 +953,7 @@ function DataPanel({quests,arsenal,missions,recurring,bountyBank,totalXPBank,ran
                   <div key={r} style={{display:"flex",alignItems:"center",gap:10}}>
                     <div style={{width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",border:`1px solid ${RANK_COLORS[r]}44`,color:RANK_COLORS[r],fontSize:11,fontWeight:700,fontFamily:"'Rajdhani',sans-serif",flexShrink:0}}>{r}</div>
                     <div style={{flex:1,fontSize:9,color:"#444",fontFamily:"'Share Tech Mono',monospace"}}>{RANK_TITLES[r].split("·")[0].trim()}</div>
-                    <input type="number" value={editT[i]} onChange={e=>{const t=[...editT];t[i]=e.target.value;setEditT(t);}} style={{width:70,textAlign:"right",fontSize:11,padding:"5px 8px"}}/>
+  <input type="text" value={editT[i]} onChange={e=>{const t=[...editT];t[i]=e.target.value;setEditT(t);}} placeholder="e.g. 1k" style={{width:80,textAlign:"right",background:"#0a0a14",border:"1px solid #1a1a2e",color:"#e5e5e5",padding:"5px 8px",fontSize:11,fontFamily:"'Share Tech Mono',monospace"}}/>  
                   </div>
                 ))}
                 <div style={{display:"flex",alignItems:"center",gap:10,opacity:0.3}}>
